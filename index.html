@@ -1405,35 +1405,21 @@ async function voegGebruikerToe(){
 async function verwijderGebruiker(userId,email){
   if(!confirm(`Gebruiker ${email} verwijderen?`)) return;
   try{
-    await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`,{
-      method:'DELETE',
-      headers:{'apikey':SUPABASE_SERVICE_KEY,'Authorization':'Bearer '+SUPABASE_SERVICE_KEY}
-    });
-    await fetch(`${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}`,{
-      method:'DELETE',
-      headers:{'apikey':SUPABASE_SERVICE_KEY,'Authorization':'Bearer '+SUPABASE_SERVICE_KEY}
-    });
-    loadGebruikers();
-  }catch(e){alert('Fout: '+e.message);}
-}
-</script>
-</body>
-</html>
 
 <script>
-/* 3D HEIDELBERG ACHTERGROND */
+/* 3D HEIDELBERG ACHTERGROND - MEER LOGOS */
 const logoSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:white;stop-opacity:1" /><stop offset="100%" style="stop-color:#00b050;stop-opacity:1" /></linearGradient></defs><path d="M 30 20 L 55 20 Q 68 20 68 50 Q 68 80 55 80 L 30 80 Z" fill="url(#grad)" stroke="white" stroke-width="1"/><rect x="35" y="32" width="16" height="36" fill="#1B5E4A" opacity="0.5"/></svg>`;
 const canvas = document.getElementById('canvas');
 if(canvas){
-  const cols = 9;
-  const rows = 7;
+  const cols = 10;
+  const rows = 8;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const logo = document.createElement('div');
       logo.className = 'logo';
       logo.innerHTML = logoSvg;
-      logo.style.left = (col * 150) + 'px';
-      logo.style.top = (row * 160) + 'px';
+      logo.style.left = (col * 140) + 'px';
+      logo.style.top = (row * 150) + 'px';
       const delay = Math.random() * 0.5;
       const duration = 3 + Math.random() * 2;
       logo.style.animation = `float ${duration}s ease-in-out infinite ${delay}s`;
