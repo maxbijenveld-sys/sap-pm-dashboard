@@ -27,12 +27,12 @@
   .light-top{position:fixed;top:-200px;left:50%;width:600px;height:600px;background:radial-gradient(circle,rgba(0,176,80,0.25),transparent 70%);filter:blur(80px);transform:translateX(-50%);pointer-events:none;z-index:1}
   .light-bottom{position:fixed;bottom:-200px;left:20%;width:600px;height:600px;background:radial-gradient(circle,rgba(27,94,74,0.3),transparent 70%);filter:blur(100px);pointer-events:none;z-index:1}
   .canvas{position:fixed;top:0;left:0;width:100%;height:100%;transform-style:preserve-3d;perspective:1200px;transform:rotateZ(45deg);transition:transform 0.05s ease-out;z-index:2;pointer-events:none}
-  .logo{position:absolute;width:150px;height:100px;opacity:0.08}
+  .logo{position:absolute;width:150px;height:100px;opacity:0.18}
   .logo svg{width:100%;height:100%;filter:drop-shadow(0 10px 20px rgba(0,0,0,0.3))}
   @keyframes float{0%,100%{transform:translateY(0px)}50%{transform:translateY(-15px)}}
   /* === END 3D === */
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1a1a18;font-size:14px;min-height:100vh;position:relative}
-  .topbar{background:#004E2B;border-bottom:1px solid #003D22;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000}
+  .topbar{background:#004E2B;border-bottom:1px solid #003D22;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000;text-shadow:0 1px 3px rgba(0,0,0,0.2)}
   .topbar-left{display:flex;align-items:center;gap:16px}
   .logo{font-size:15px;font-weight:600;color:#fff}
   .logo span{color:#00DD39}
@@ -46,7 +46,7 @@
   .upload-btn{display:flex;align-items:center;gap:7px;font-size:13px;padding:6px 14px;border-radius:7px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);cursor:pointer;color:#fff;font-weight:500}
   .upload-btn:hover{background:rgba(255,255,255,0.2)}
   .upload-btn svg{width:15px;height:15px;stroke:#fff}
-  .main{padding:24px;max-width:1200px;margin:0 auto;position:relative;z-index:10}
+  .main{padding:24px;max-width:1200px;margin:0 auto;position:relative;z-index:10;background:rgba(255,255,255,0.99)}
   .pg{display:none}.pg.active{display:block}
   .fr{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
   .fr label{font-size:13px;color:#666}
@@ -1425,15 +1425,15 @@ async function verwijderGebruiker(userId,email){
 const logoSvg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:white;stop-opacity:1" /><stop offset="100%" style="stop-color:#00b050;stop-opacity:1" /></linearGradient></defs><path d="M 30 20 L 55 20 Q 68 20 68 50 Q 68 80 55 80 L 30 80 Z" fill="url(#grad)" stroke="white" stroke-width="1"/><rect x="35" y="32" width="16" height="36" fill="#1B5E4A" opacity="0.5"/></svg>`;
 const canvas = document.getElementById('canvas');
 if(canvas){
-  const cols = 6;
-  const rows = 5;
+  const cols = 9;
+  const rows = 7;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const logo = document.createElement('div');
       logo.className = 'logo';
       logo.innerHTML = logoSvg;
-      logo.style.left = (col * 200) + 'px';
-      logo.style.top = (row * 220) + 'px';
+      logo.style.left = (col * 150) + 'px';
+      logo.style.top = (row * 160) + 'px';
       const delay = Math.random() * 0.5;
       const duration = 3 + Math.random() * 2;
       logo.style.animation = `float ${duration}s ease-in-out infinite ${delay}s`;
