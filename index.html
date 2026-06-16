@@ -3,366 +3,150 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SAP PM Weekplanning Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<title>SAP PM Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-  * { box-sizing: border-box; }
-  
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F6F4;color:#1a1a18;font-size:14px;min-height:100vh;margin:0;position:relative}
-  
-  .login-screen{display:flex;position:fixed;inset:0;background:rgba(0,78,43,0.9);z-index:9999;flex-direction:column;align-items:center;justify-content:center}
-  .login-box{background:#fff;border-radius:14px;padding:40px 36px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
-  .login-logo{font-size:20px;font-weight:700;color:#004E2B;margin-bottom:6px}
-  .login-logo span{color:#00DD39}
-  .login-sub{font-size:13px;color:#888;margin-bottom:28px}
-  .login-label{font-size:12px;color:#666;margin-bottom:5px;font-weight:500}
-  .login-inp{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #D8E5DC;font-size:14px;margin-bottom:14px;outline:none}
-  .login-inp:focus{border-color:#004E2B;box-shadow:0 0 0 3px rgba(0,78,43,0.1)}
-  .login-btn{width:100%;padding:11px;background:#004E2B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px;transition:background 0.2s}
-  .login-btn:hover{background:#003D22}
-  .login-btn:disabled{opacity:.6}
-  .login-err{font-size:12px;color:#dc2626;margin-top:8px;min-height:18px;font-weight:500}
-  
-  #appShell{position:relative;z-index:100}
-  .topbar{background:#004E2B;border-bottom:1px solid #003D22;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000}
-  .topbar-left{display:flex;align-items:center;gap:16px}
-  .logo-text{font-size:15px;font-weight:600;color:#fff}
-  .logo-text span{color:#00DD39}
-  .nav{display:flex;gap:2px}
-  .nt{font-size:13px;padding:5px 13px;border-radius:7px;border:none;background:transparent;cursor:pointer;color:rgba(255,255,255,0.75);transition:all 0.2s}
-  .nt:hover{background:rgba(255,255,255,0.12)}
-  .nt.active{background:rgba(255,255,255,0.18);color:#fff;font-weight:500}
-  .nt.wk{font-size:12px;padding:4px 10px}
-  
-  .main{padding:24px;max-width:1200px;margin:0 auto;background:#F4F6F4;min-height:calc(100vh - 52px)}
-  .pg{display:none}.pg.active{display:block}
-  
-  .fr{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
-  .fr label{font-size:13px;color:#666}
-  .fr select{font-size:13px;padding:5px 10px;border-radius:7px;border:1px solid #B8CEBC;background:#fff;color:#1a1a18;cursor:pointer}
-  
-  .kg{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}
-  .kc{background:#fff;border:1px solid #D8E5DC;border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-  .kl{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;font-weight:600}
-  .kv{font-size:24px;font-weight:600;color:#1a1a18;margin:8px 0}
-  .ks{font-size:11px;color:#888}
-  
-  .cr{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-  .cc{background:#fff;border:1px solid #D8E5DC;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-  .cct{font-size:13px;color:#666;margin-bottom:12px;font-weight:500}
-  
-  .tw{border:1px solid #D8E5DC;border-radius:10px;overflow:hidden;margin-bottom:20px;overflow-x:auto;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-  table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
-  th{text-align:left;font-size:11px;font-weight:600;color:#888;padding:12px 10px;border-bottom:1px solid #D8E5DC;background:#F5FAF7}
-  td{padding:10px;border-bottom:1px solid #EAF2ED}
-  tr:hover td{background:#F9FCFB}
-  
-  .badge{display:inline-block;font-size:11px;padding:4px 10px;border-radius:5px;font-weight:600}
-  .bja{background:#D6F0E2;color:#003D22}
-  .bnee{background:#fee2e2;color:#991b1b}
-  .bdeels{background:#fef3c7;color:#92400e}
-  .buc{background:#dbeafe;color:#1e40af}
-  .bg2{background:#d1fae5;color:#065f46}
-  .bo2{background:#ffe4d6;color:#9a3412}
-  
-  .sl{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin:20px 0 10px;letter-spacing:0.05em}
-  .whr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-  .wt{font-size:20px;font-weight:600}
-  .ws{font-size:13px;color:#888;margin-top:2px}
-  
-  .user-info{font-size:12px;color:rgba(255,255,255,0.6);margin-right:6px}
-  .logout-btn{font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:transparent;cursor:pointer;color:rgba(255,255,255,0.8);transition:all 0.2s}
-  .logout-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
-  
-  @media(max-width:900px){
-    .kg{grid-template-columns:repeat(3,1fr)}
-    .cr{grid-template-columns:1fr}
-  }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F4F6F4; color: #1a1a18; margin: 0; }
+.login-screen { display: flex; position: fixed; inset: 0; background: rgba(0,78,43,0.9); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
+.login-box { background: #fff; border-radius: 14px; padding: 40px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.login-logo { font-size: 20px; font-weight: 700; color: #004E2B; margin-bottom: 6px; }
+.login-logo span { color: #00DD39; }
+.login-sub { font-size: 13px; color: #888; margin-bottom: 28px; }
+.login-label { font-size: 12px; color: #666; margin-bottom: 5px; }
+.login-inp { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid #D8E5DC; font-size: 14px; margin-bottom: 14px; }
+.login-inp:focus { border-color: #004E2B; }
+.login-btn { width: 100%; padding: 11px; background: #004E2B; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.login-btn:hover { background: #003D22; }
+.login-err { font-size: 12px; color: #dc2626; margin-top: 8px; }
+
+.topbar { background: #004E2B; border-bottom: 1px solid #003D22; padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+.logo-text { font-size: 15px; font-weight: 600; color: #fff; }
+.logo-text span { color: #00DD39; }
+.nav { display: flex; gap: 2px; }
+.nt { font-size: 13px; padding: 5px 13px; border-radius: 7px; border: none; background: transparent; cursor: pointer; color: rgba(255,255,255,0.75); }
+.nt:hover { background: rgba(255,255,255,0.12); }
+.nt.active { background: rgba(255,255,255,0.18); color: #fff; }
+.nt.wk { font-size: 12px; padding: 4px 10px; }
+.main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.pg { display: none; }
+.pg.active { display: block; }
+.fr { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.fr select { font-size: 13px; padding: 5px 10px; border-radius: 7px; border: 1px solid #B8CEBC; background: #fff; }
+.kg { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px; }
+.kc { background: #fff; border: 1px solid #D8E5DC; border-radius: 10px; padding: 14px; }
+.kl { font-size: 11px; color: #888; margin-bottom: 4px; }
+.kv { font-size: 24px; font-weight: 600; color: #004E2B; }
+.cr { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.cc { background: #fff; border: 1px solid #D8E5DC; border-radius: 10px; padding: 16px; }
+.cct { font-size: 13px; color: #666; margin-bottom: 12px; }
+.tw { border: 1px solid #D8E5DC; border-radius: 10px; overflow: auto; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th { text-align: left; font-size: 11px; font-weight: 600; color: #888; padding: 12px; border-bottom: 1px solid #D8E5DC; background: #F5FAF7; }
+td { padding: 10px 12px; border-bottom: 1px solid #EAF2ED; }
+tr:hover td { background: #F9FCFB; }
+.badge { display: inline-block; font-size: 11px; padding: 4px 10px; border-radius: 5px; font-weight: 600; }
+.bja { background: #D6F0E2; color: #003D22; }
+.bnee { background: #fee2e2; color: #991b1b; }
+.user-info { font-size: 12px; color: rgba(255,255,255,0.6); margin-right: 6px; }
+.logout-btn { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: transparent; cursor: pointer; color: rgba(255,255,255,0.8); }
+.logout-btn:hover { background: rgba(255,255,255,0.1); }
 </style>
 </head>
 <body>
-<!-- LOGIN SCREEN -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
     <div class="login-logo">SAP PM <span>Dashboard</span></div>
-    <div class="login-sub">Heidelberg Materials — Onderhoud</div>
-    <div class="login-label">E-mailadres</div>
-    <input class="login-inp" type="email" id="loginEmail" placeholder="naam@heidelbergmaterials.com" value="demo@example.com">
+    <div class="login-sub">Heidelberg Materials</div>
+    <div class="login-label">Email</div>
+    <input class="login-inp" type="email" id="loginEmail" value="demo@example.com">
     <div class="login-label">Wachtwoord</div>
-    <input class="login-inp" type="password" id="loginPassword" placeholder="••••••••" value="demo">
+    <input class="login-inp" type="password" id="loginPassword" value="demo">
     <button class="login-btn" id="loginBtn">Inloggen</button>
     <div class="login-err" id="loginError"></div>
   </div>
 </div>
 
-<!-- APP SHELL -->
 <div id="appShell" style="display:none">
 <div class="topbar">
   <div class="topbar-left">
     <div class="logo-text">SAP PM <span>Dashboard</span></div>
-    <nav class="nav" id="mainNav">
-      <button class="nt active" onclick="showPage('dashboard')">📊 Dashboard</button>
-      <button class="nt" onclick="showPage('backlog')">📋 Backlog</button>
-      <span id="wkTabs"></span>
+    <nav class="nav">
+      <button class="nt active" onclick="showPage('dashboard')">Dashboard</button>
+      <button class="nt" onclick="showPage('backlog')">Backlog</button>
     </nav>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span class="user-info" id="userInfo"></span>
-    <button class="logout-btn" onclick="signOut()">Uitloggen</button>
-  </div>
+  <div><span class="user-info" id="userInfo"></span><button class="logout-btn" onclick="signOut()">Uitloggen</button></div>
 </div>
 
 <div class="main">
   <div class="pg active" id="pg-dashboard">
     <div class="fr">
       <label>Week:</label>
-      <select id="fWeek" onchange="renderDash()">
-        <option value="all">Alle weken</option>
-      </select>
-      <label>Type:</label>
-      <select id="fType" onchange="renderDash()">
-        <option value="all">Gepland + ongepland</option>
-        <option value="gepland">Alleen gepland</option>
-        <option value="ongepland">Alleen ongepland</option>
-      </select>
+      <select id="fWeek" onchange="renderDash()"><option value="all">Alle</option></select>
     </div>
     <div class="kg" id="dKpis"></div>
     <div class="cr">
-      <div class="cc">
-        <div class="cct">WO's per week — gepland vs. ongepland</div>
-        <div style="position:relative;height:220px"><canvas id="lc"></canvas></div>
-      </div>
-      <div class="cc">
-        <div class="cct">Uitvoering per week</div>
-        <div style="position:relative;height:220px"><canvas id="bc"></canvas></div>
-      </div>
+      <div class="cc"><div class="cct">WO's</div><div style="height:200px"><canvas id="lc"></canvas></div></div>
+      <div class="cc"><div class="cct">Status</div><div style="height:200px"><canvas id="bc"></canvas></div></div>
     </div>
-    <div class="sl">Werkorders overzicht</div>
-    <div id="dTbl"></div>
+    <div style="margin-top:20px"><div style="font-size:12px;font-weight:600;color:#888;margin-bottom:10px">WERKORDERS</div><div id="dTbl"></div></div>
   </div>
 
   <div class="pg" id="pg-backlog">
-    <div class="whr">
-      <div><div class="wt">Backlog — unieke werkorders</div><div class="ws">Alle openstaande werkorders</div></div>
-    </div>
+    <div style="font-size:20px;font-weight:600;margin-bottom:16px">Backlog</div>
     <div class="kg" id="bKpis"></div>
     <div id="bTbl"></div>
   </div>
-
-  <div id="wkPages"></div>
 </div>
 </div>
 
 <script>
-let lcI=null, bcI=null;
-let weeks=[];
-let currentUser = null;
-
-function kpis(rows){
-  const t=rows.length, ja=rows.filter(r=>r.status==='ja').length, 
-    nee=rows.filter(r=>r.status==='nee').length,
-    d=rows.filter(r=>r.status==='deels'||r.status==='uc').length,
-    g=rows.filter(r=>r.type==='gepland').length,
-    o=rows.filter(r=>r.type==='ongepland').length,
-    pct=t>0?Math.round(ja/t*100):0;
-  return{t,ja,nee,d,g,o,pct};
-}
-
-function kc(l,v,s){return `<div class="kc"><div class="kl">${l}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;}
-
-function sb(s){
-  if(s==='ja') return '<span class="badge bja">✓ Ja</span>';
-  if(s==='nee') return '<span class="badge bnee">✗ Nee</span>';
-  if(s==='deels') return '<span class="badge bdeels">⚡ Deels</span>';
-  if(s==='uc') return '<span class="badge buc">🔄 UC</span>';
-  return '—';
-}
-
-function getDefaultWeeks(){
+let lcI, bcI, weeks=[], currentUser;
+function kc(l,v){return `<div class="kc"><div class="kl">${l}</div><div class="kv">${v}</div></div>`;}
+function getWeeks(){
   return [
-    {id:'w19',week:19,label:'4–8 mei 2026',rows:[
-      {day:'Ma',wo:'11870431',omschrijving:'KL4711: K8/S4 ventiel lekt',wie:'Jeroen',type:'gepland',status:'nee'},
-      {day:'Ma',wo:'11863602',omschrijving:'KM4720: moeren nazien',wie:'Sjoerd, Nello',type:'gepland',status:'nee'},
-      {day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie & smeren',wie:'Sjoerd, Nello',type:'gepland',status:'ja'},
-      {day:'Di',wo:'32006498',omschrijving:'TB2410: controle rolstellen',wie:'Sjoerd, Nello',type:'gepland',status:'ja'},
-      {day:'Wo',wo:'11729163',omschrijving:'TB2420: controle rolstellen',wie:'Sjoerd, Nello',type:'gepland',status:'ja'},
-      {day:'Do',wo:'32052539',omschrijving:'PG5210: filter vervangen',wie:'Nello',type:'gepland',status:'ja'},
-      {day:'Vr',wo:'32006436',omschrijving:'GB0050: werkplaats schoonmaken',wie:'Allen',type:'gepland',status:'ja'},
-    ]},
-    {id:'w20',week:20,label:'11–15 mei 2026',rows:[
-      {day:'Ma',wo:'11859805',omschrijving:'OV4731: waaier schoonmaken',wie:'Nello, Thomas',type:'gepland',status:'nee'},
-      {day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie & smeren',wie:'Nello, Thomas',type:'gepland',status:'ja'},
-      {day:'Wo',wo:'11882139',omschrijving:'DB4720: voorbereiding bandwissel',wie:'Thomas, Nello',type:'gepland',status:'ja'},
-      {day:'Vr',wo:'32006436',omschrijving:'GB0050: werkplaats schoonmaken',wie:'Allen',type:'gepland',status:'ja'},
-    ]},
-    {id:'w21',week:21,label:'18–22 mei 2026',rows:[
-      {day:'Ma',wo:'11870431',omschrijving:'KL4711: ventiel onderhoud',wie:'Jeroen, Thomas',type:'gepland',status:'nee'},
-      {day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie & smeren',wie:'Sjoerd, Nello',type:'gepland',status:'ja'},
-      {day:'Wo',wo:'11873794',omschrijving:'DB2410: lagers vervangen',wie:'Jeroen, Thomas',type:'gepland',status:'ja'},
-      {day:'Do',wo:'11880330',omschrijving:'EL2310: instroom repareren',wie:'Nello, Sjoerd',type:'gepland',status:'ja'},
-      {day:'Vr',wo:'32006436',omschrijving:'GB0050: werkplaats schoonmaken',wie:'Allen',type:'gepland',status:'ja'},
-    ]},
-    {id:'w22',week:22,label:'25–29 mei 2026',rows:[
-      {day:'Di',wo:'11873794',omschrijving:'DB2410: zuid lager stuk',wie:'Jeroen, Thomas, Lars',type:'gepland',status:'ja'},
-      {day:'Wo',wo:'11882139',omschrijving:'DB4720: band beschadigingen',wie:'Jeroen, Thomas',type:'gepland',status:'nee'},
-      {day:'Do',wo:'23303735',omschrijving:'KM4910: oliekoelers vervangen',wie:'Nello, Sjoerd',type:'gepland',status:'nee'},
-      {day:'Vr',wo:'32006436',omschrijving:'GB0050: werkplaats schoonmaken',wie:'Allen',type:'gepland',status:'nee'},
-      {day:'Vr',wo:'—',omschrijving:'KM4720: afgebroken bout plaatsen',wie:'—',type:'ongepland',status:'nee'},
-    ]},
-    {id:'w23',week:23,label:'1–5 juni 2026',rows:[
-      {day:'Ma',wo:'11870431',omschrijving:'KL4711: ventiel lekt',wie:'Jeroen, Nello',type:'gepland',status:'nee'},
-      {day:'Ma',wo:'11886092',omschrijving:'LS2481: luchtsluis vervangen',wie:'Nello, Lars',type:'ongepland',status:'ja'},
-      {day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie & smeren',wie:'Sjoerd, Nello',type:'gepland',status:'ja'},
-      {day:'Wo',wo:'11880424',omschrijving:'OI2471: fluortest',wie:'van Dijk, Max',type:'gepland',status:'ja'},
-      {day:'Do',wo:'11886093',omschrijving:'SC5270: luchtlekkage',wie:'Jeroen, Sjoerd',type:'gepland',status:'nee'},
-      {day:'Vr',wo:'32006436',omschrijving:'GB0050: werkplaats schoonmaken',wie:'Allen',type:'gepland',status:'deels'},
-    ]},
-    {id:'w24',week:24,label:'8–12 juni 2026',rows:[
-      {day:'Ma',wo:'11882139',omschrijving:'DB4720: band beschadigingen',wie:'Sjoerd, Thomas, Nello',type:'gepland',status:'ja'},
-      {day:'Di',wo:'11879557',omschrijving:'VE6200: borden ophangen',wie:'Nello, Lars',type:'gepland',status:'uc'},
-      {day:'Di',wo:'11872827',omschrijving:'SC4043: cilinder omwisselen',wie:'Nello, Lars',type:'gepland',status:'nee'},
-      {day:'Wo',wo:'23303735',omschrijving:'KM4910: oliekoelers vervangen',wie:'Sjoerd, Lars',type:'gepland',status:'nee'},
-      {day:'Do',wo:'11878318',omschrijving:'Diverse luchtlekkages repareren',wie:'Thomas, Sjoerd',type:'gepland',status:'nee'},
-      {day:'Vr',wo:'32006436',omschrijving:'GB0050: werkplaats schoonmaken',wie:'Allen',type:'gepland',status:'ja'},
-    ]},
+    {id:'w19',week:19,label:'4–8 mei',rows:[{day:'Ma',wo:'11870431',omschrijving:'KL4711: ventiel',wie:'Jeroen',type:'gepland',status:'nee'},{day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie',wie:'Sjoerd',type:'gepland',status:'ja'},{day:'Wo',wo:'11729163',omschrijving:'TB2420: controle',wie:'Nello',type:'gepland',status:'ja'},{day:'Do',wo:'32052539',omschrijving:'PG5210: filter',wie:'Nello',type:'gepland',status:'ja'},{day:'Vr',wo:'32006436',omschrijving:'GB0050: schoonmaken',wie:'Allen',type:'gepland',status:'ja'}]},
+    {id:'w20',week:20,label:'11–15 mei',rows:[{day:'Ma',wo:'11859805',omschrijving:'OV4731: waaier',wie:'Nello',type:'gepland',status:'nee'},{day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie',wie:'Nello',type:'gepland',status:'ja'},{day:'Wo',wo:'11882139',omschrijving:'DB4720: voorbereiding',wie:'Thomas',type:'gepland',status:'ja'},{day:'Vr',wo:'32006436',omschrijving:'GB0050: schoonmaken',wie:'Allen',type:'gepland',status:'ja'}]},
+    {id:'w21',week:21,label:'18–22 mei',rows:[{day:'Ma',wo:'11870431',omschrijving:'KL4711: ventiel',wie:'Jeroen',type:'gepland',status:'nee'},{day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie',wie:'Sjoerd',type:'gepland',status:'ja'},{day:'Wo',wo:'11873794',omschrijving:'DB2410: lagers',wie:'Jeroen',type:'gepland',status:'ja'},{day:'Do',wo:'11880330',omschrijving:'EL2310: instroom',wie:'Nello',type:'gepland',status:'ja'},{day:'Vr',wo:'32006436',omschrijving:'GB0050: schoonmaken',wie:'Allen',type:'gepland',status:'ja'}]},
+    {id:'w22',week:22,label:'25–29 mei',rows:[{day:'Di',wo:'11873794',omschrijving:'DB2410: lager',wie:'Jeroen',type:'gepland',status:'ja'},{day:'Wo',wo:'11882139',omschrijving:'DB4720: band',wie:'Jeroen',type:'gepland',status:'nee'},{day:'Do',wo:'23303735',omschrijving:'KM4910: koelers',wie:'Nello',type:'gepland',status:'nee'},{day:'Vr',wo:'32006436',omschrijving:'GB0050: schoonmaken',wie:'Allen',type:'gepland',status:'nee'}]},
+    {id:'w23',week:23,label:'1–5 juni',rows:[{day:'Ma',wo:'11870431',omschrijving:'KL4711: ventiel',wie:'Jeroen',type:'gepland',status:'nee'},{day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie',wie:'Sjoerd',type:'gepland',status:'ja'},{day:'Wo',wo:'11880424',omschrijving:'OI2471: fluortest',wie:'Max',type:'gepland',status:'ja'},{day:'Do',wo:'11886093',omschrijving:'SC5270: lekkage',wie:'Jeroen',type:'gepland',status:'nee'},{day:'Vr',wo:'32006436',omschrijving:'GB0050: schoonmaken',wie:'Allen',type:'gepland',status:'deels'}]},
+    {id:'w24',week:24,label:'8–12 juni',rows:[{day:'Ma',wo:'11882139',omschrijving:'DB4720: band',wie:'Sjoerd',type:'gepland',status:'ja'},{day:'Di',wo:'11879557',omschrijving:'VE6200: borden',wie:'Nello',type:'gepland',status:'uc'},{day:'Di',wo:'11872827',omschrijving:'SC4043: cilinder',wie:'Nello',type:'gepland',status:'nee'},{day:'Wo',wo:'23303735',omschrijving:'KM4910: koelers',wie:'Sjoerd',type:'gepland',status:'nee'},{day:'Do',wo:'11878318',omschrijving:'Luchtlekkages',wie:'Thomas',type:'gepland',status:'nee'},{day:'Vr',wo:'32006436',omschrijving:'GB0050: schoonmaken',wie:'Allen',type:'gepland',status:'ja'}]}
   ];
 }
-
 function renderDash(){
-  const wf=document.getElementById('fWeek').value;
-  const tf=document.getElementById('fType').value;
-  const fWks=wf==='all'?weeks:weeks.filter(w=>w.id===wf);
-  let allRows=[];
-  fWks.forEach(w=>w.rows.filter(r=>tf==='all'||r.type===tf).forEach(r=>allRows.push({...r,_wk:`W${w.week}`})));
-  
-  const k=kpis(allRows);
-  document.getElementById('dKpis').innerHTML=
-    kc('Totaal WO\'s',k.t,'')+
-    kc('Afgerond',k.ja,k.pct+'%')+
-    kc('Niet uitgevoerd',k.nee,'')+
-    kc('Deels/UC',k.d,'')+
-    kc('Gepland',k.g,'')+
-    kc('Ongepland',k.o,'');
-  
-  let th=`<div class="tw"><table><thead><tr><th>Week</th><th>Dag</th><th style="width:100px">Order</th><th>Omschrijving</th><th style="width:120px">Wie</th><th>Type</th><th>Status</th></tr></thead><tbody>`;
-  if(!allRows.length) th+=`<tr><td colspan="7" style="text-align:center;color:#aaa">Geen werkorders</td></tr>`;
-  allRows.forEach(r=>{
-    th+=`<tr><td><strong>${r._wk}</strong></td><td>${r.day}</td><td><code>${r.wo}</code></td><td>${r.omschrijving}</td><td>${r.wie}</td><td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td><td>${sb(r.status)}</td></tr>`;
-  });
-  document.getElementById('dTbl').innerHTML=th+'</tbody></table></div>';
-  
-  const DAYS=['Ma','Di','Wo','Do','Vr'];
-  const gD=DAYS.map(d=>allRows.filter(r=>r.day===d&&r.type==='gepland').length);
-  const oD=DAYS.map(d=>allRows.filter(r=>r.day===d&&r.type==='ongepland').length);
-  const jaD=DAYS.map(d=>allRows.filter(r=>r.day===d&&r.status==='ja').length);
-  const neeD=DAYS.map(d=>allRows.filter(r=>r.day===d&&r.status==='nee').length);
-  
-  if(lcI) lcI.destroy();
-  lcI=new Chart(document.getElementById('lc'),{type:'line',data:{labels:DAYS,datasets:[
-    {label:'Gepland',data:gD,borderColor:'#004E2B',backgroundColor:'rgba(0,78,43,0.07)',tension:.35,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#004E2B'},
-    {label:'Ongepland',data:oD,borderColor:'#00DD39',backgroundColor:'rgba(0,221,57,0.07)',tension:.35,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#00DD39',borderDash:[5,4]}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top'}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'}}}}});
-  
-  if(bcI) bcI.destroy();
-  bcI=new Chart(document.getElementById('bc'),{type:'bar',data:{labels:DAYS,datasets:[
-    {label:'Afgerond',data:jaD,backgroundColor:'#004E2B'},
-    {label:'Niet afgerond',data:neeD,backgroundColor:'#dc2626'}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'}}}}});
+  const allRows=weeks.flatMap(w=>w.rows.map(r=>({...r,_wk:`W${w.week}`})));
+  const ja=allRows.filter(r=>r.status==='ja').length, nee=allRows.filter(r=>r.status==='nee').length;
+  document.getElementById('dKpis').innerHTML=kc('Totaal',allRows.length)+kc('Afgerond',ja)+kc('Openstaand',nee);
+  let html='<div class="tw"><table><thead><tr><th>Week</th><th>Order</th><th>Omschrijving</th><th>Wie</th><th>Status</th></tr></thead><tbody>';
+  allRows.forEach(r=>{html+=`<tr><td>${r._wk}</td><td>${r.wo}</td><td>${r.omschrijving}</td><td>${r.wie}</td><td><span class="badge ${r.status==='ja'?'bja':'bnee'}">${r.status}</span></td></tr>`;});
+  document.getElementById('dTbl').innerHTML=html+'</tbody></table></div>';
 }
-
 function renderBacklog(){
-  const byOrder={};
-  weeks.forEach(w=>{
-    w.rows.forEach(r=>{
-      if(!r.wo||r.wo==='—') return;
-      if(!byOrder[r.wo]) byOrder[r.wo]=[];
-      byOrder[r.wo].push(r);
-    });
-  });
-  
-  const unique=[];
-  Object.entries(byOrder).forEach(([wo,entries])=>{
-    unique.push({...entries[entries.length-1],_occurrences:entries.length});
-  });
-  
-  const total=unique.length;
-  const open=unique.filter(u=>u.status!=='ja').length;
-  const done=total-open;
-  
-  document.getElementById('bKpis').innerHTML=
-    kc('Totaal unieke WO\'s',total,'')+
-    kc('Openstaand',open,Math.round(open/(total||1)*100)+'%')+
-    kc('Afgerond',done,Math.round(done/(total||1)*100)+'%');
-  
-  let th=`<div class="tw"><table><thead><tr><th style="width:100px">Order</th><th>Omschrijving</th><th>Wie</th><th>Type</th><th>Status</th></tr></thead><tbody>`;
-  unique.forEach(r=>{
-    th+=`<tr><td><code>${r.wo}</code></td><td>${r.omschrijving}</td><td>${r.wie}</td><td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td><td>${sb(r.status)}</td></tr>`;
-  });
-  document.getElementById('bTbl').innerHTML=th+'</tbody></table></div>';
+  const unique=Array.from(new Set(weeks.flatMap(w=>w.rows.map(r=>r.wo)))).filter(wo=>wo!=='—').map(wo=>{const all=weeks.flatMap(w=>w.rows).filter(r=>r.wo===wo); return all[all.length-1];});
+  document.getElementById('bKpis').innerHTML=kc('Totaal',unique.length)+kc('Openstaand',unique.filter(u=>u.status!=='ja').length);
+  let html='<div class="tw"><table><thead><tr><th>Order</th><th>Omschrijving</th><th>Status</th></tr></thead><tbody>';
+  unique.forEach(r=>{html+=`<tr><td>${r.wo}</td><td>${r.omschrijving}</td><td><span class="badge ${r.status==='ja'?'bja':'bnee'}">${r.status}</span></td></tr>`;});
+  document.getElementById('bTbl').innerHTML=html+'</tbody></table></div>';
 }
-
-function refreshFilter(){
-  const s=document.getElementById('fWeek');
-  s.innerHTML='<option value="all">Alle weken</option>';
-  weeks.forEach(w=>{
-    const o=document.createElement('option');
-    o.value=w.id; o.textContent=`Week ${w.week}`;
-    s.appendChild(o);
-  });
-}
-
-function refreshTabs(){
-  const c=document.getElementById('wkTabs');
-  c.innerHTML='';
-  weeks.forEach(w=>{
-    const b=document.createElement('button');
-    b.className='nt wk'; b.textContent=`W${w.week}`;
-    b.onclick=()=>showPage('dashboard');
-    c.appendChild(b);
-  });
-}
-
 function showPage(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nt').forEach(t=>t.classList.remove('active'));
-  const pg=document.getElementById('pg-'+id);
-  if(pg) pg.classList.add('active');
-  if(id==='dashboard'){
-    document.querySelector('.nt').classList.add('active');
-    renderDash();
-  } else if(id==='backlog'){
-    document.querySelectorAll('.nt')[1].classList.add('active');
-    renderBacklog();
-  }
+  document.getElementById('pg-'+id).classList.add('active');
+  document.event.target?.classList?.add('active');
+  if(id==='dashboard') renderDash();
+  else renderBacklog();
 }
-
-function signOut(){
-  currentUser=null;
-  document.getElementById('appShell').style.display='none';
-  document.getElementById('loginScreen').style.display='flex';
-}
-
-document.getElementById('loginBtn').onclick=function(){
-  const email=document.getElementById('loginEmail').value.trim();
-  const pw=document.getElementById('loginPassword').value;
-  const err=document.getElementById('loginError');
-  if(!email||!pw){err.textContent='Vul alles in';return;}
-  currentUser={email};
+document.getElementById('loginBtn').onclick=()=>{
+  currentUser=document.getElementById('loginEmail').value;
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appShell').style.display='block';
-  document.getElementById('userInfo').textContent=email;
-  weeks=getDefaultWeeks();
-  refreshFilter();
-  refreshTabs();
+  document.getElementById('userInfo').textContent=currentUser;
+  weeks=getWeeks();
   showPage('dashboard');
 };
-
-document.addEventListener('keydown',(e)=>{
-  if(e.key==='Enter'&&document.getElementById('loginScreen').style.display!=='none'){
-    document.getElementById('loginBtn').click();
-  }
-});
+document.getElementById('loginScreen').style.display='flex';
 </script>
 </body>
 </html>
