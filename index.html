@@ -134,9 +134,14 @@ function showPage(id){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nt').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
-  document.event.target?.classList?.add('active');
+  if(event.target) event.target.classList.add('active');
   if(id==='dashboard') renderDash();
   else renderBacklog();
+}
+function signOut(){
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginScreen').style.justifyContent='center';
 }
 document.getElementById('loginBtn').onclick=()=>{
   currentUser=document.getElementById('loginEmail').value;
@@ -144,9 +149,16 @@ document.getElementById('loginBtn').onclick=()=>{
   document.getElementById('appShell').style.display='block';
   document.getElementById('userInfo').textContent=currentUser;
   weeks=getWeeks();
+  const select=document.getElementById('fWeek');
+  select.innerHTML='<option value="all">Alle</option>';
+  weeks.forEach(w=>{
+    const opt=document.createElement('option');
+    opt.value=w.id;
+    opt.textContent='Week '+w.week;
+    select.appendChild(opt);
+  });
   showPage('dashboard');
 };
-document.getElementById('loginScreen').style.display='flex';
 </script>
 </body>
 </html>
