@@ -8,19 +8,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
   * { box-sizing: border-box; }
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F6F4;color:#1a1a18;font-size:14px;min-height:100vh;margin:0;overflow-x:hidden}
   
-  /* === 3D BACKGROUND === */
+  /* === 3D BACKGROUND - ONDER ALLES === */
   .bg-3d{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;background:linear-gradient(135deg,#1B5E4A 0%,#0F4A39 100%)}
   .light-top{position:fixed;top:-200px;left:50%;width:600px;height:600px;background:radial-gradient(circle,rgba(0,176,80,0.25),transparent 70%);filter:blur(80px);transform:translateX(-50%);z-index:1}
   .light-bottom{position:fixed;bottom:-200px;left:20%;width:600px;height:600px;background:radial-gradient(circle,rgba(27,94,74,0.3),transparent 70%);filter:blur(100px);z-index:1}
   .canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;perspective:1200px;transform-style:preserve-3d;transform:rotateZ(45deg)}
-  .logo{position:absolute;width:140px;height:140px;opacity:0.12;display:flex;align-items:center;justify-content:center}
-  .logo svg{width:100%;height:100%;filter:drop-shadow(0 0 8px rgba(0,0,0,0.3))}
+  .logo{position:absolute;width:140px;height:140px;opacity:0.12}
+  .logo svg{width:100%;height:100%}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
   
-  /* LOGIN SCREEN - MUST BE ON TOP! */
-  .login-screen{display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:transparent;color:#1a1a18;font-size:14px;min-height:100vh;margin:0;position:relative}
+  
+  .login-screen{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
   .login-box{background:#fff;border-radius:14px;padding:40px 36px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3);z-index:10000}
   .login-logo{font-size:20px;font-weight:700;color:#004E2B;margin-bottom:6px}
   .login-logo span{color:#00DD39}
@@ -28,24 +28,78 @@
   .login-label{font-size:12px;color:#666;margin-bottom:5px;font-weight:500}
   .login-inp{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #D8E5DC;font-size:14px;margin-bottom:14px;outline:none}
   .login-inp:focus{border-color:#004E2B;box-shadow:0 0 0 3px rgba(0,78,43,0.1)}
-  .login-btn{width:100%;padding:11px;background:#004E2B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px;transition:background 0.2s}
+  .login-btn{width:100%;padding:11px;background:#004E2B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
   .login-btn:hover{background:#003D22}
-  .login-btn:disabled{opacity:.6;cursor:default}
-  .login-err{font-size:12px;color:#dc2626;margin-top:8px;min-height:18px;font-weight:500}
+  .login-err{font-size:12px;color:#dc2626;margin-top:8px;min-height:18px}
   
+  #appShell{position:relative;z-index:100}
   .topbar{background:#004E2B;border-bottom:1px solid #003D22;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000}
   .topbar-left{display:flex;align-items:center;gap:16px}
   .logo-text{font-size:15px;font-weight:600;color:#fff}
   .logo-text span{color:#00DD39}
+  .nav{display:flex;gap:2px}
+  .nt{font-size:13px;padding:5px 13px;border-radius:7px;border:none;background:transparent;cursor:pointer;color:rgba(255,255,255,0.75)}
+  .nt:hover{background:rgba(255,255,255,0.12)}
+  .nt.active{background:rgba(255,255,255,0.18);color:#fff;font-weight:500}
+  .nt.wk{font-size:12px;padding:4px 10px}
+  .nt.add{color:#00DD39;border:1px dashed rgba(0,221,57,0.5);background:transparent}
+  .upload-btn{display:flex;align-items:center;gap:7px;font-size:13px;padding:6px 14px;border-radius:7px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);cursor:pointer;color:#fff;font-weight:500}
+  .upload-btn:hover{background:rgba(255,255,255,0.2)}
+  .main{padding:24px;max-width:1200px;margin:0 auto;background:rgba(244,246,244,0.98);min-height:calc(100vh - 52px)}
+  .pg{display:none}.pg.active{display:block}
   
-  .main{padding:24px;max-width:1200px;margin:0 auto;position:relative;z-index:10}
+  .fr{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+  .fr label{font-size:13px;color:#666}
+  .fr select{font-size:13px;padding:5px 10px;border-radius:7px;border:1px solid #B8CEBC;background:#fff;color:#1a1a18;cursor:pointer}
+  
+  .kg{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}
+  .kc{background:#fff;border:1px solid #D8E5DC;border-radius:10px;padding:14px 16px}
+  .kl{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase}
+  .kv{font-size:24px;font-weight:600;color:#1a1a18}
+  .ks{font-size:11px;color:#888;margin-top:3px}
+  
+  .cr{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
   .cc{background:#fff;border:1px solid #D8E5DC;border-radius:10px;padding:16px 18px}
+  .cct{font-size:13px;color:#666;margin-bottom:8px;font-weight:500}
+  
+  .tw{border:1px solid #D8E5DC;border-radius:10px;overflow:hidden;margin-bottom:20px;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;font-weight:600;color:#888;padding:8px 10px;border-bottom:1px solid #D8E5DC;background:#F5FAF7}
+  td{padding:7px 10px;border-bottom:1px solid #EAF2ED}
+  tr:hover td{background:#F5FAF7}
+  
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:500}
+  .bja{background:#D6F0E2;color:#003D22}
+  .bnee{background:#fee2e2;color:#991b1b}
+  .bdeels{background:#fef3c7;color:#92400e}
+  .buc{background:#dbeafe;color:#1e40af}
+  .bg2{background:#d1fae5;color:#065f46}
+  .bo2{background:#ffe4d6;color:#9a3412}
+  
+  .sl{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;margin:20px 0 10px}
   .whr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-  .wt{font-size:20px;font-weight:600;color:#1a1a18}
+  .wt{font-size:20px;font-weight:600}
   .ws{font-size:13px;color:#888;margin-top:2px}
   
+  .btn{font-size:13px;padding:7px 16px;border-radius:7px;border:1px solid #B8CEBC;background:#fff;cursor:pointer;color:#1a1a18;font-weight:500}
+  .btn:hover{background:#F4F6F4}
+  .btn-p{background:#004E2B;color:#fff;border-color:transparent}
+  .btn-p:hover{background:#003D22}
+  .btn-del{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+  .btn-del:hover{background:#fecaca}
+  
+  .gstatus{font-size:13px;padding:10px 24px;border-bottom:1px solid #D6F0E2;margin-bottom:12px;border-radius:8px}
+  .gstatus.success{background:#D6F0E2;color:#003D22}
+  .gstatus.error{background:#fee2e2;color:#991b1b}
+  .gstatus.info{background:#EAF2ED;color:#1a1a18}
+  
+  .user-info{font-size:12px;color:rgba(255,255,255,0.6);margin-right:6px}
+  .logout-btn{font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:transparent;cursor:pointer;color:rgba(255,255,255,0.8)}
+  .logout-btn:hover{background:rgba(255,255,255,0.1)}
+  
   @media(max-width:900px){
-    .login-box{width:90%;max-width:360px}
+    .kg{grid-template-columns:repeat(3,1fr)}
+    .cr{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -76,91 +130,269 @@
 <div class="topbar">
   <div class="topbar-left">
     <div class="logo-text">SAP PM <span>Dashboard</span></div>
+    <nav class="nav" id="mainNav">
+      <button class="nt active" onclick="showPage('dashboard')">Dashboard</button>
+      <button class="nt" onclick="showPage('backlog')">Backlog</button>
+      <span id="wkTabs"></span>
+    </nav>
   </div>
-  <div style="color:white;font-size:12px">✨ 3D Achtergrond Actief</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="user-info" id="userInfo"></span>
+    <button class="logout-btn" onclick="signOut()">Uitloggen</button>
+  </div>
 </div>
 
+<div id="globalStatus"></div>
+
 <div class="main">
-  <div id="pg-dashboard">
-    <div class="whr">
-      <div>
-        <div class="wt">Welkom bij SAP PM Dashboard</div>
-        <div class="ws">Met 3D Heidelberg Materials achtergrond</div>
+  <div class="pg active" id="pg-dashboard">
+    <div class="fr">
+      <label>Week:</label>
+      <select id="fWeek" onchange="renderDash()">
+        <option value="all">Alle weken</option>
+      </select>
+      <label>Type:</label>
+      <select id="fType" onchange="renderDash()">
+        <option value="all">Gepland + ongepland</option>
+        <option value="gepland">Alleen gepland</option>
+        <option value="ongepland">Alleen ongepland</option>
+      </select>
+    </div>
+    <div class="kg" id="dKpis"></div>
+    <div class="cr">
+      <div class="cc">
+        <div class="cct">WO's per week — gepland vs. ongepland</div>
+        <div style="position:relative;height:220px"><canvas id="lc"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="cct">Uitvoering per week</div>
+        <div style="position:relative;height:220px"><canvas id="bc"></canvas></div>
       </div>
     </div>
-    <div class="cc" style="text-align:center;padding:60px 40px;background:rgba(255,255,255,0.95)">
-      <div style="font-size:32px;color:#004E2B;margin-bottom:20px;font-weight:700">✨ 3D Achtergrond WERKT! ✨</div>
-      <div style="color:#666;font-size:16px;margin-bottom:20px">Je ziet de Heidelberg Materials 3D achtergrond met animatie!</div>
-      <div style="color:#aaa;font-size:13px">💡 Tip: Beweeg je muis over het scherm om het 3D perspectief effect te zien</div>
-      <button class="login-btn" style="margin-top:30px;width:auto;padding:10px 40px" onclick="signOut()">Uitloggen</button>
-    </div>
+    <div class="sl">Werkorders overzicht</div>
+    <div id="dTbl"></div>
   </div>
+
+  <div class="pg" id="pg-backlog">
+    <div class="whr">
+      <div><div class="wt">Backlog — unieke werkorders</div></div>
+    </div>
+    <div class="kg" id="bKpis"></div>
+    <div id="bTbl"></div>
+  </div>
+
+  <div id="wkPages"></div>
 </div>
 </div>
 
 <script>
-// 3D CANVAS SETUP
-const canvas = document.getElementById('canvas');
-if(canvas) {
-  // SVG Heidelberg logo
-  const logoSvG = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#ffffff;stop-opacity:1"/><stop offset="100%" style="stop-color:#00DD39;stop-opacity:1"/></linearGradient></defs><circle cx="50" cy="50" r="35" fill="none" stroke="url(#g)" stroke-width="2" opacity="0.8"/><path d="M 50 20 L 65 35 L 50 50 L 35 35 Z" fill="url(#g)" opacity="0.9"/><path d="M 50 50 L 65 65 L 50 80 L 35 65 Z" fill="white" opacity="0.7"/></svg>';
+let lcI=null, bcI=null;
+let weeks=[];
+let currentUser = null;
+
+// KPI helpers
+function kpis(rows){
+  const t=rows.length, ja=rows.filter(r=>r.status==='ja').length, 
+    nee=rows.filter(r=>r.status==='nee').length,
+    d=rows.filter(r=>r.status==='deels'||r.status==='uc').length,
+    g=rows.filter(r=>r.type==='gepland').length,
+    o=rows.filter(r=>r.type==='ongepland').length,
+    pct=t>0?Math.round(ja/t*100):0;
+  return{t,ja,nee,d,g,o,pct};
+}
+
+function kc(l,v,s){return `<div class="kc"><div class="kl">${l}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;}
+
+function sb(s){
+  if(s==='ja') return '<span class="badge bja">Ja</span>';
+  if(s==='nee') return '<span class="badge bnee">Nee</span>';
+  if(s==='deels') return '<span class="badge bdeels">Deels</span>';
+  if(s==='uc') return '<span class="badge buc">UC</span>';
+  return '—';
+}
+
+function getDefaultWeeks(){
+  return [
+    {id:'w19',week:19,label:'4–8 mei 2026',rows:[
+      {day:'Ma',wo:'11870431',omschrijving:'KL4711: K8/S4 ventiel lekt',wie:'Jeroen',type:'gepland',status:'nee'},
+      {day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie & smeren',wie:'Sjoerd',type:'gepland',status:'ja'},
+      {day:'Wo',wo:'11729163',omschrijving:'TB2420: controle rolstellen',wie:'Nello',type:'gepland',status:'ja'},
+      {day:'Do',wo:'32052539',omschrijving:'PG5210: filter vervangen',wie:'Nello',type:'gepland',status:'ja'},
+      {day:'Vr',wo:'32006436',omschrijving:'GB0050: werkplaats schoonmaken',wie:'Allen',type:'gepland',status:'ja'},
+    ]},
+    {id:'w20',week:20,label:'11–15 mei 2026',rows:[
+      {day:'Ma',wo:'11859805',omschrijving:'OV4731: waaier schoonmaken',wie:'Nello',type:'gepland',status:'nee'},
+      {day:'Di',wo:'31858073',omschrijving:'KR2410: inspectie & smeren',wie:'Nello',type:'gepland',status:'ja'},
+      {day:'Wo',wo:'11882139',omschrijving:'DB4720: band voorbereiding',wie:'Thomas',type:'gepland',status:'ja'},
+      {day:'Do',wo:'—',omschrijving:'Diverse werkzaamheden',wie:'Team',type:'ongepland',status:'nee'},
+    ]},
+    {id:'w21',week:21,label:'18–22 mei 2026',rows:[
+      {day:'Ma',wo:'11870431',omschrijving:'KL4711: ventiel onderhoud',wie:'Jeroen',type:'gepland',status:'nee'},
+      {day:'Di',wo:'11878315',omschrijving:'Luchtlekkages repareren',wie:'Jeroen',type:'gepland',status:'ja'},
+      {day:'Wo',wo:'11873794',omschrijving:'DB2410: lagers vervangen',wie:'Jeroen',type:'gepland',status:'ja'},
+      {day:'Do',wo:'11880330',omschrijving:'EL2310: instroom repareren',wie:'Nello',type:'gepland',status:'ja'},
+      {day:'Vr',wo:'32006436',omschrijving:'GB0050: schoonmaken',wie:'Allen',type:'gepland',status:'ja'},
+    ]},
+  ];
+}
+
+function renderDash(){
+  const wf=document.getElementById('fWeek').value;
+  const tf=document.getElementById('fType').value;
+  const fWks=wf==='all'?weeks:weeks.filter(w=>w.id===wf);
+  let allRows=[];
+  fWks.forEach(w=>w.rows.filter(r=>tf==='all'||r.type===tf).forEach(r=>allRows.push({...r,_wk:`W${w.week}`})));
   
-  const cols = 14, rows = 11;
-  for(let r=0; r<rows; r++) {
-    for(let c=0; c<cols; c++) {
-      const logo = document.createElement('div');
-      logo.className = 'logo';
-      logo.innerHTML = logoSvG;
-      logo.style.left = (c * 110) + 'px';
-      logo.style.top = (r * 115) + 'px';
-      const delay = Math.random() * 0.8;
-      const duration = 4 + Math.random() * 3;
-      logo.style.animation = `float ${duration}s ease-in-out infinite ${delay}s`;
-      canvas.appendChild(logo);
-    }
-  }
+  const k=kpis(allRows);
+  document.getElementById('dKpis').innerHTML=
+    kc('Totaal WO\'s',k.t,'')+
+    kc('Afgerond',k.ja,k.pct+'%')+
+    kc('Niet uitgevoerd',k.nee,'')+
+    kc('Deels/UC',k.d,'')+
+    kc('Gepland',k.g,'')+
+    kc('Ongepland',k.o,'');
   
-  // 3D mouse effect
-  document.addEventListener('mousemove', (e) => {
-    const x = (e.clientX / window.innerWidth - 0.5) * 20;
-    const y = (e.clientY / window.innerHeight - 0.5) * 20;
-    canvas.style.transform = `rotateZ(45deg) rotateX(${y}deg) rotateY(${x}deg)`;
+  let th=`<div class="tw"><table><thead><tr><th>Week</th><th>Dag</th><th style="width:82px">Order</th><th>Omschrijving</th><th style="width:115px">Wie</th><th>Type</th><th>Status</th></tr></thead><tbody>`;
+  allRows.forEach(r=>{
+    th+=`<tr><td>${r._wk}</td><td>${r.day}</td><td>${r.wo}</td><td>${r.omschrijving}</td><td>${r.wie}</td><td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td><td>${sb(r.status)}</td></tr>`;
+  });
+  document.getElementById('dTbl').innerHTML=th+'</tbody></table></div>';
+  
+  // Charts
+  const DAYS=['Ma','Di','Wo','Do','Vr'];
+  const gD=DAYS.map(d=>allRows.filter(r=>r.day===d&&r.type==='gepland').length);
+  const oD=DAYS.map(d=>allRows.filter(r=>r.day===d&&r.type==='ongepland').length);
+  const jaD=DAYS.map(d=>allRows.filter(r=>r.day===d&&r.status==='ja').length);
+  const neeD=DAYS.map(d=>allRows.filter(r=>r.day===d&&r.status==='nee').length);
+  
+  if(lcI) lcI.destroy();
+  lcI=new Chart(document.getElementById('lc'),{type:'line',data:{labels:DAYS,datasets:[
+    {label:'Gepland',data:gD,borderColor:'#004E2B',backgroundColor:'rgba(0,78,43,0.07)',tension:.35,borderWidth:2,pointRadius:4},
+    {label:'Ongepland',data:oD,borderColor:'#00DD39',backgroundColor:'rgba(0,221,57,0.07)',tension:.35,borderWidth:2,pointRadius:4,borderDash:[5,4]}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
+  
+  if(bcI) bcI.destroy();
+  bcI=new Chart(document.getElementById('bc'),{type:'bar',data:{labels:DAYS,datasets:[
+    {label:'Ja',data:jaD,backgroundColor:'#004E2B'},
+    {label:'Nee',data:neeD,backgroundColor:'#dc2626'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true}}}});
+}
+
+function renderBacklog(){
+  const byOrder={};
+  weeks.forEach(w=>{
+    w.rows.forEach(r=>{
+      if(!r.wo||r.wo==='—') return;
+      if(!byOrder[r.wo]) byOrder[r.wo]=[];
+      byOrder[r.wo].push(r);
+    });
+  });
+  
+  const unique=[];
+  Object.entries(byOrder).forEach(([wo,entries])=>{
+    unique.push({...entries[entries.length-1],_occurrences:entries.length});
+  });
+  
+  const total=unique.length;
+  const open=unique.filter(u=>u.status!=='ja').length;
+  
+  document.getElementById('bKpis').innerHTML=
+    kc('Unieke WO\'s',total,'')+
+    kc('Openstaand',open,'')+
+    kc('Afgerond',total-open,'');
+  
+  let th=`<div class="tw"><table><thead><tr><th>Order</th><th>Omschrijving</th><th>Wie</th><th>Type</th><th>Status</th></tr></thead><tbody>`;
+  unique.forEach(r=>{
+    th+=`<tr><td>${r.wo}</td><td>${r.omschrijving}</td><td>${r.wie}</td><td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td><td>${sb(r.status)}</td></tr>`;
+  });
+  document.getElementById('bTbl').innerHTML=th+'</tbody></table></div>';
+}
+
+function refreshFilter(){
+  const s=document.getElementById('fWeek');
+  s.innerHTML='<option value="all">Alle weken</option>';
+  weeks.forEach(w=>{
+    const o=document.createElement('option');
+    o.value=w.id; o.textContent=`Week ${w.week}`;
+    s.appendChild(o);
   });
 }
 
-// LOGIN
-const loginBtn = document.getElementById('loginBtn');
-const loginEmail = document.getElementById('loginEmail');
-const loginPassword = document.getElementById('loginPassword');
-const loginError = document.getElementById('loginError');
-const appShell = document.getElementById('appShell');
-const loginScreen = document.getElementById('loginScreen');
-
-loginBtn.onclick = function() {
-  const email = loginEmail.value.trim();
-  const pw = loginPassword.value;
-  
-  if(!email || !pw) {
-    loginError.textContent = 'Vul e-mail en wachtwoord in';
-    return;
-  }
-  
-  // Demo: accept any non-empty values
-  loginScreen.style.display = 'none';
-  appShell.style.display = 'block';
-  loginError.textContent = '';
-};
-
-function signOut() {
-  appShell.style.display = 'none';
-  loginScreen.style.display = 'flex';
-  loginError.textContent = '';
+function refreshTabs(){
+  const c=document.getElementById('wkTabs');
+  c.innerHTML='';
+  weeks.forEach(w=>{
+    const b=document.createElement('button');
+    b.className='nt wk'; b.textContent=`W${w.week}`;
+    b.onclick=()=>showPage('dashboard');
+    c.appendChild(b);
+  });
 }
 
-// Enter to login
-document.addEventListener('keydown', (e) => {
-  if(e.key === 'Enter' && loginScreen.style.display !== 'none') {
-    loginBtn.click();
+function showPage(id){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nt').forEach(t=>t.classList.remove('active'));
+  const pg=document.getElementById('pg-'+id);
+  if(pg) pg.classList.add('active');
+  if(id==='dashboard'){
+    document.querySelector('.nt').classList.add('active');
+    renderDash();
+  } else if(id==='backlog'){
+    document.querySelectorAll('.nt')[1].classList.add('active');
+    renderBacklog();
+  }
+}
+
+function signOut(){
+  currentUser=null;
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginError').textContent='';
+}
+
+// LOGIN
+document.getElementById('loginBtn').onclick=function(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pw=document.getElementById('loginPassword').value;
+  const err=document.getElementById('loginError');
+  if(!email||!pw){err.textContent='Vul alles in';return;}
+  currentUser={email};
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appShell').style.display='block';
+  document.getElementById('userInfo').textContent=email;
+  weeks=getDefaultWeeks();
+  refreshFilter();
+  refreshTabs();
+  showPage('dashboard');
+};
+
+// 3D SETUP
+const canvas=document.getElementById('canvas');
+if(canvas){
+  const logoSVG='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g"><stop offset="0%" style="stop-color:white;stop-opacity:1"/><stop offset="100%" style="stop-color:#00DD39;stop-opacity:1"/></linearGradient></defs><circle cx="50" cy="50" r="35" fill="none" stroke="url(#g)" stroke-width="2"/><path d="M 50 20 L 65 35 L 50 50 L 35 35 Z" fill="url(#g)"/></svg>';
+  const cols=14, rows=11;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const logo=document.createElement('div');
+    logo.className='logo';
+    logo.innerHTML=logoSVG;
+    logo.style.left=(c*110)+'px';
+    logo.style.top=(r*115)+'px';
+    const delay=Math.random()*0.8;
+    const duration=4+Math.random()*3;
+    logo.style.animation=`float ${duration}s ease-in-out infinite ${delay}s`;
+    canvas.appendChild(logo);
+  }
+  document.addEventListener('mousemove',e=>{
+    const x=(e.clientX/window.innerWidth-0.5)*20;
+    const y=(e.clientY/window.innerHeight-0.5)*20;
+    canvas.style.transform=`rotateZ(45deg) rotateX(${y}deg) rotateY(${x}deg)`;
+  });
+}
+
+// ENTER KEY
+document.addEventListener('keydown',(e)=>{
+  if(e.key==='Enter'&&document.getElementById('loginScreen').style.display!=='none'){
+    document.getElementById('loginBtn').click();
   }
 });
 </script>
