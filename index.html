@@ -260,7 +260,7 @@
     <!-- Nieuwe gebruiker toevoegen -->
     <div class="wf" style="margin-bottom:20px">
       <div class="sl" style="margin-top:0">Nieuwe gebruiker uitnodigen</div>
-      <p style="font-size:13px;color:#888;margin-bottom:14px">De uitgenodigde collega ontvangt een e-mail van <strong>bijenveldmax@gmail.com</strong> met een link om zelf een wachtwoord in te stellen.</p>
+      <p style="font-size:13px;color:#888;margin-bottom:14px">Maak een account aan en geef de inloggegevens door aan de collega. Zij kunnen het wachtwoord daarna zelf wijzigen.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
         <div>
           <label style="font-size:11px;color:#888;display:block;margin-bottom:4px">Naam</label>
@@ -277,7 +277,7 @@
             <option value="admin">Admin</option>
           </select>
         </div>
-        <button class="btn btn-p" onclick="voegGebruikerToe()" style="white-space:nowrap">&#128231; Uitnodiging sturen</button>
+        <button class="btn btn-p" onclick="voegGebruikerToe()" style="white-space:nowrap">+ Toevoegen</button>
       </div>
       <div id="gebruikerStatus" style="margin-top:12px;font-size:13px;min-height:20px"></div>
     </div>
@@ -1378,17 +1378,16 @@ async function loadGebruikers(){
   el.innerHTML='<div style="padding:1rem;text-align:center;color:#888">Laden...</div>';
   try{
     const r=await fetch(`/api/admin?action=list-users`);
-    if(!r.ok) throw new Error(`API fout ${r.status}: ${r.statusText}`);
+    if(!r.ok) throw new Error(`API fout ${r.status}`);
     const data=await r.json();
-    const authUsers=Array.isArray(data)?data:(data.users||[]);
+    const authUsers=data.users||[];
 
     const r2=await fetch(`${SUPABASE_URL}/rest/v1/user_roles?select=email,role`,{
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+currentUser?.access_token}
     });
     const rolesRaw=await r2.json();
     const roleMap={};
-    const rolesArr=Array.isArray(rolesRaw)?rolesRaw:[];
-    rolesArr.forEach(x=>{if(x&&x.email) roleMap[x.email]=x.role;});
+    (Array.isArray(rolesRaw)?rolesRaw:[]).forEach(x=>{if(x&&x.email) roleMap[x.email]=x.role;});
 
     if(!authUsers.length){
       el.innerHTML='<div style="padding:1rem;text-align:center;color:#888">Geen gebruikers gevonden</div>';
@@ -1421,11 +1420,7 @@ async function loadGebruikers(){
 
     el.innerHTML=html+'</tbody></table>';
   }catch(e){
-    el.innerHTML=`<div style="padding:1rem;color:#dc2626">
-      Fout bij laden gebruikers: ${e.message}<br>
-      <small style="color:#888">Zorg dat je bent ingelogd via sap-pm-dashboard.vercel.app (niet lokaal)</small>
-    </div>`;
-    console.error('loadGebruikers error:', e);
+    el.innerHTML=`<div style="padding:1rem;color:#dc2626">Fout: ${e.message}<br><small style="color:#888">Werkt alleen via sap-pm-dashboard.vercel.app</small></div>`;
   }
 }
 
@@ -1438,14 +1433,18 @@ async function voegGebruikerToe(){
   status.style.color='#888';status.textContent='Bezig...';
   
   try{
-    // Probeer uitnodigingsmail via serverless function
-    const r=await fetch(`/api/admin?action=invite-user`,{
+    // Genereer tijdelijk wachtwoord
+    const tempPw='Welkom'+Math.floor(Math.random()*9000+1000)+'!';
+    
+    // Maak account aan via serverless function
+    const r=await fetch(`/api/admin?action=create-user`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email,naam,role:rol})
+      body:JSON.stringify({email,password:tempPw,naam})
     });
     const data=await r.json();
-    
+    if(data.error||data.msg) throw new Error(data.msg||data.error);
+
     // Voeg rol toe in user_roles tabel
     await fetch(`${SUPABASE_URL}/rest/v1/user_roles`,{
       method:'POST',
@@ -1458,31 +1457,16 @@ async function voegGebruikerToe(){
       body:JSON.stringify({email,role:rol})
     });
 
-    if(data.error||data.msg){
-      // Invite mislukt — fallback naar wachtwoord aanmaken
-      const tempPw='Welkom'+Math.floor(Math.random()*9000+1000)+'!';
-      const r2=await fetch(`/api/admin?action=create-user`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({email,password:tempPw,naam})
-      });
-      const d2=await r2.json();
-      if(d2.error||d2.msg) throw new Error(d2.msg||d2.error);
-      
-      status.innerHTML=`<div style="background:#FEF3C7;border:1px solid #92400E;border-radius:8px;padding:12px 16px">
-        <div style="color:#92400E;font-weight:600;margin-bottom:6px">⚠ Uitnodigingsmail kon niet worden verstuurd</div>
-        <div style="color:#666;margin-bottom:8px">Account aangemaakt — geef dit door aan ${naam||email}:</div>
-        <div style="background:#fff;border-radius:6px;padding:10px 14px;font-family:monospace;font-size:13px">
-          <div>E-mail: <strong>${email}</strong></div>
-          <div>Wachtwoord: <strong>${tempPw}</strong></div>
-          <div style="font-size:11px;color:#888;margin-top:6px">URL: sap-pm-dashboard.vercel.app</div>
-        </div>
-      </div>`;
-    } else {
-      status.innerHTML=`<div style="background:#EAF2ED;border:1px solid #004E2B;border-radius:8px;padding:12px 16px;color:#004E2B">
-        ✓ Uitnodiging verstuurd naar <strong>${email}</strong> — zij ontvangen een e-mail om hun wachtwoord in te stellen.
-      </div>`;
-    }
+    status.innerHTML=`<div style="background:#EAF2ED;border:1px solid #004E2B;border-radius:8px;padding:12px 16px">
+      <div style="color:#004E2B;font-weight:600;margin-bottom:6px">✓ Account aangemaakt voor ${naam||email}</div>
+      <div style="color:#666;margin-bottom:8px">Geef deze inloggegevens door aan de gebruiker:</div>
+      <div style="background:#fff;border-radius:6px;padding:10px 14px;font-family:monospace;font-size:13px">
+        <div>E-mail: <strong>${email}</strong></div>
+        <div>Wachtwoord: <strong>${tempPw}</strong></div>
+        <div style="font-size:11px;color:#888;margin-top:6px">URL: sap-pm-dashboard.vercel.app</div>
+      </div>
+      <div style="font-size:12px;color:#888;margin-top:8px">De gebruiker kan daarna zelf het wachtwoord wijzigen via de knop rechtsboven.</div>
+    </div>`;
     
     document.getElementById('newUserNaam').value='';
     document.getElementById('newUserEmail').value='';
