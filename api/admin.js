@@ -10,10 +10,9 @@ export default async function handler(req, res) {
   const action = req.query.action;
 
   if (!SUPABASE_SERVICE_KEY) {
-    return res.status(500).json({ error: 'SUPABASE_SERVICE_KEY niet geconfigureerd in Vercel' });
+    return res.status(500).json({ error: 'SUPABASE_SERVICE_KEY niet geconfigureerd' });
   }
 
-  // Legacy JWT key — stuur als apikey EN Authorization Bearer
   const authHeaders = {
     'apikey': SUPABASE_SERVICE_KEY,
     'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
@@ -21,79 +20,59 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Body ophalen
     let body = {};
     if (req.body) {
       body = typeof req.body === 'object' ? req.body : JSON.parse(req.body);
     }
 
-    // ── Gebruikers ophalen ──
     if (action === 'list-users') {
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, { headers: authHeaders });
-      console.log('List users status:', r.status);
       const text = await r.text();
-      console.log('List users response:', text.substring(0, 200));
+      console.log('List users:', r.status, text.substring(0, 100));
       try { return res.status(200).json(JSON.parse(text)); }
       catch(e) { return res.status(200).json({ error: text }); }
     }
 
-    // ── Gebruiker uitnodigen ──
     if (action === 'invite-user') {
       const email = body.email || '';
       const naam = body.naam || '';
       const role = body.role || 'viewer';
-      console.log('Invite:', email, naam, role);
-
+      
+      // Correcte Supabase invite endpoint
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/invite`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({
-          email,
-          data: { naam, role },
-          redirect_to: 'https://sap-pm-dashboard.vercel.app'
-        })
+        body: JSON.stringify({ email, data: { naam, role }, redirect_to: 'https://sap-pm-dashboard.vercel.app' })
       });
-      console.log('Invite status:', r.status);
       const text = await r.text();
-      console.log('Invite response:', text.substring(0, 200));
+      console.log('Invite:', r.status, text.substring(0, 200));
       try { return res.status(200).json(JSON.parse(text)); }
       catch(e) { return res.status(200).json({ error: text }); }
     }
 
-    // ── Gebruiker aanmaken met wachtwoord ──
     if (action === 'create-user') {
-      const email = body.email || '';
-      const password = body.password || '';
-      const naam = body.naam || '';
-      console.log('Create user:', email);
-
+      const { email, password, naam } = body;
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { naam } })
+        body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { naam: naam || '' } })
       });
-      console.log('Create user status:', r.status);
       const text = await r.text();
-      console.log('Create user response:', text.substring(0, 200));
+      console.log('Create user:', r.status, text.substring(0, 200));
       try { return res.status(200).json(JSON.parse(text)); }
       catch(e) { return res.status(200).json({ error: text }); }
     }
 
-    // ── Gebruiker verwijderen ──
     if (action === 'delete-user') {
       const userId = req.query.userId || '';
-      const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: authHeaders
-      });
-      console.log('Delete user status:', r.status);
+      await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, { method: 'DELETE', headers: authHeaders });
       return res.status(200).json({ success: true });
     }
 
     return res.status(400).json({ error: 'Onbekende actie: ' + action });
 
   } catch (err) {
-    console.error('Admin API error:', err.message);
+    console.error('Error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 }
