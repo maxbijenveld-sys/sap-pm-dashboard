@@ -5,13 +5,18 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const action = req.query.action;
 
+  // Debug logging
+  console.log('Action:', action);
+  console.log('Method:', req.method);
+  console.log('Body type:', typeof req.body);
+  console.log('Body value:', JSON.stringify(req.body));
+
   if (!SUPABASE_SERVICE_KEY) {
-    return res.status(500).json({ error: 'SUPABASE_SERVICE_KEY niet geconfigureerd' });
+    return res.status(500).json({ error: 'SERVICE_KEY missing' });
   }
 
   const authHeaders = {
@@ -21,85 +26,63 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Lees body correct — Vercel geeft body al geparsed mee
+    // Body ophalen — alle mogelijke formaten afvangen
     let body = {};
-    if (req.method === 'POST') {
-      if (typeof req.body === 'object' && req.body !== null) {
+    if (req.body) {
+      if (typeof req.body === 'object') {
         body = req.body;
-      } else if (typeof req.body === 'string' && req.body.length > 0) {
-        body = JSON.parse(req.body);
+      } else if (typeof req.body === 'string') {
+        try { body = JSON.parse(req.body); } catch(e) { body = {}; }
       }
     }
+    console.log('Parsed body:', JSON.stringify(body));
 
     if (action === 'list-users') {
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, { headers: authHeaders });
-      const text = await r.text();
-      try {
-        return res.status(200).json(JSON.parse(text));
-      } catch(e) {
-        return res.status(200).send(text);
-      }
+      const data = await r.json();
+      return res.status(200).json(data);
     }
 
-    if (action === 'invite-user' && req.method === 'POST') {
-      const { email, naam, role } = body;
-      if (!email) return res.status(400).json({ error: 'Email verplicht' });
+    if (action === 'invite-user') {
+      const email = body.email || '';
+      const naam = body.naam || '';
+      const role = body.role || 'viewer';
+      console.log('Inviting:', email, naam, role);
       
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/invite`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ 
-          email, 
-          data: { naam: naam || '', role: role || 'viewer' }, 
-          redirect_to: 'https://sap-pm-dashboard.vercel.app' 
-        })
+        body: JSON.stringify({ email, data: { naam, role }, redirect_to: 'https://sap-pm-dashboard.vercel.app' })
       });
-      const text = await r.text();
-      console.log('Invite response:', text.substring(0, 200));
-      try {
-        return res.status(200).json(JSON.parse(text));
-      } catch(e) {
-        return res.status(200).json({ error: text });
-      }
+      const data = await r.json();
+      console.log('Invite result:', JSON.stringify(data));
+      return res.status(200).json(data);
     }
 
-    if (action === 'create-user' && req.method === 'POST') {
-      const { email, password, naam } = body;
-      if (!email || !password) return res.status(400).json({ error: 'Email en wachtwoord verplicht' });
+    if (action === 'create-user') {
+      const email = body.email || '';
+      const password = body.password || '';
+      const naam = body.naam || '';
       
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ 
-          email, 
-          password, 
-          email_confirm: true, 
-          user_metadata: { naam: naam || '' } 
-        })
+        body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { naam } })
       });
-      const text = await r.text();
-      try {
-        return res.status(200).json(JSON.parse(text));
-      } catch(e) {
-        return res.status(200).json({ error: text });
-      }
+      const data = await r.json();
+      return res.status(200).json(data);
     }
 
-    if (action === 'delete-user' && req.method === 'DELETE') {
-      const { userId } = req.query;
-      if (!userId) return res.status(400).json({ error: 'UserId verplicht' });
-      
-      await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, { 
-        method: 'DELETE', 
-        headers: authHeaders 
-      });
+    if (action === 'delete-user') {
+      const userId = req.query.userId || '';
+      await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, { method: 'DELETE', headers: authHeaders });
       return res.status(200).json({ success: true });
     }
 
     return res.status(400).json({ error: 'Onbekende actie: ' + action });
 
   } catch (err) {
-    console.error('Admin API error:', err.message, err.stack);
+    console.error('Error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 }
