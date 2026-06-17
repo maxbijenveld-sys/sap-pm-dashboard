@@ -25,44 +25,40 @@ export default async function handler(req, res) {
       body = typeof req.body === 'object' ? req.body : JSON.parse(req.body);
     }
 
+    // ── Gebruikers ophalen ──
     if (action === 'list-users') {
+      // Haal auth users op
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, { headers: authHeaders });
       const text = await r.text();
-      console.log('List users:', r.status, text.substring(0, 100));
-      try { return res.status(200).json(JSON.parse(text)); }
-      catch(e) { return res.status(200).json({ error: text }); }
+      let users = [];
+      try {
+        const data = JSON.parse(text);
+        users = Array.isArray(data) ? data : (data.users || []);
+      } catch(e) {
+        console.error('Parse error list-users:', text.substring(0, 200));
+        return res.status(200).json({ users: [] });
+      }
+      return res.status(200).json({ users });
     }
 
-    if (action === 'invite-user') {
-      const email = body.email || '';
-      const naam = body.naam || '';
-      const role = body.role || 'viewer';
-      
-      // Correcte Supabase invite endpoint
-      const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/invite`, {
-        method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify({ email, data: { naam, role }, redirect_to: 'https://sap-pm-dashboard.vercel.app' })
-      });
-      const text = await r.text();
-      console.log('Invite:', r.status, text.substring(0, 200));
-      try { return res.status(200).json(JSON.parse(text)); }
-      catch(e) { return res.status(200).json({ error: text }); }
-    }
-
+    // ── Gebruiker aanmaken (direct met wachtwoord) ──
     if (action === 'create-user') {
-      const { email, password, naam } = body;
+      const email = body.email || '';
+      const password = body.password || '';
+      const naam = body.naam || '';
+      if (!email || !password) return res.status(400).json({ error: 'Email en wachtwoord verplicht' });
+
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { naam: naam || '' } })
+        body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { naam } })
       });
       const text = await r.text();
-      console.log('Create user:', r.status, text.substring(0, 200));
       try { return res.status(200).json(JSON.parse(text)); }
       catch(e) { return res.status(200).json({ error: text }); }
     }
 
+    // ── Gebruiker verwijderen ──
     if (action === 'delete-user') {
       const userId = req.query.userId || '';
       await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, { method: 'DELETE', headers: authHeaders });
