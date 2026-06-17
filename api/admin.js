@@ -9,12 +9,6 @@ export default async function handler(req, res) {
 
   const action = req.query.action;
 
-  // Debug logging
-  console.log('Action:', action);
-  console.log('Method:', req.method);
-  console.log('Body type:', typeof req.body);
-  console.log('Body value:', JSON.stringify(req.body));
-
   if (!SUPABASE_SERVICE_KEY) {
     return res.status(500).json({ error: 'SERVICE_KEY missing' });
   }
@@ -26,16 +20,10 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Body ophalen — alle mogelijke formaten afvangen
     let body = {};
     if (req.body) {
-      if (typeof req.body === 'object') {
-        body = req.body;
-      } else if (typeof req.body === 'string') {
-        try { body = JSON.parse(req.body); } catch(e) { body = {}; }
-      }
+      body = typeof req.body === 'object' ? req.body : JSON.parse(req.body);
     }
-    console.log('Parsed body:', JSON.stringify(body));
 
     if (action === 'list-users') {
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, { headers: authHeaders });
@@ -44,30 +32,46 @@ export default async function handler(req, res) {
     }
 
     if (action === 'invite-user') {
-      const email = body.email || '';
-      const naam = body.naam || '';
-      const role = body.role || 'viewer';
-      console.log('Inviting:', email, naam, role);
+      const { email, naam, role } = body;
+      if (!email) return res.status(400).json({ error: 'Email verplicht' });
       
-      const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/invite`, {
-        method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify({ email, data: { naam, role }, redirect_to: 'https://sap-pm-dashboard.vercel.app' })
-      });
-      const data = await r.json();
-      console.log('Invite result:', JSON.stringify(data));
+      // Probeer beide endpoints
+      const endpoints = [
+        `${SUPABASE_URL}/auth/v1/admin/invite`,
+        `${SUPABASE_URL}/auth/v1/admin/users/invite`
+      ];
+      
+      let data = null;
+      for (const endpoint of endpoints) {
+        const r = await fetch(endpoint, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({ 
+            email, 
+            data: { naam: naam||'', role: role||'viewer' }, 
+            redirect_to: 'https://sap-pm-dashboard.vercel.app' 
+          })
+        });
+        const text = await r.text();
+        console.log(`Endpoint ${endpoint}: ${r.status} - ${text.substring(0,100)}`);
+        if (r.status !== 404) {
+          try { data = JSON.parse(text); } catch(e) { data = { error: text }; }
+          break;
+        }
+      }
+      
+      if (!data) data = { error: 'Invite endpoint niet gevonden' };
       return res.status(200).json(data);
     }
 
     if (action === 'create-user') {
-      const email = body.email || '';
-      const password = body.password || '';
-      const naam = body.naam || '';
+      const { email, password, naam } = body;
+      if (!email || !password) return res.status(400).json({ error: 'Email en wachtwoord verplicht' });
       
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { naam } })
+        body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { naam: naam||'' } })
       });
       const data = await r.json();
       return res.status(200).json(data);
