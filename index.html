@@ -1314,7 +1314,7 @@ async function verwijderGebruiker(userId,email){
 // ── Reden Analyse ──────────────────────────────────────────────
 async function loadRedenAnalyse() {
   try {
-    const data = await sbFetch('/rest/v1/weekplanning?select=reden&week=gte.26&not=reden.is.null');
+    const data = await sbFetch('/rest/v1/weekplanning?select=reden&week=gte.26&reden=not.is.null');
     const redenCounts = {};
     (data || []).forEach(row => {
       const reden = row?.reden;
