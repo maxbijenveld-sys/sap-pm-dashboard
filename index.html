@@ -664,8 +664,16 @@ function parseExcelSheet(raw){
   }
   if(!weekNum) return null;
 
-  // W22+ splitst Gepland (kol 0-6) en Ongepland (kol 8-14) in twee kolomblokken
-  const hasSplit=raw.some(r=>(r||[]).some(c=>(c||'').toString().toLowerCase().includes('ongeplande werkzaamheden')));
+  // W22+ splitst Gepland en Ongepland in twee kolomblokken. De ongepland-kolom
+  // schuift op vanaf W26 (extra "Reden"-kolom toegevoegd), dus we zoeken de
+  // startkolom dynamisch op via de "Ongeplande werkzaamheden"-koptekst in plaats
+  // van een vast kolomnummer aan te nemen.
+  let ongOffset=-1;
+  for(const r of raw){
+    const idx=(r||[]).findIndex(c=>(c||'').toString().toLowerCase().includes('ongeplande werkzaamheden'));
+    if(idx>=0){ongOffset=idx;break;}
+  }
+  const hasSplit=ongOffset>=0;
   const skipVals=new Set(['werkzaamheden','werkzaamheden (vulwerk)','jaar','week',
     'geplande werkzaamheden','ongeplande werkzaamheden','hemelvaartsdag',
     'geen td aanwezig','2e pinksterdag','']);
@@ -697,7 +705,7 @@ function parseExcelSheet(raw){
     if(!currentDag) continue;
 
     addRow(r[0],r[1],r[2],r[3],r[4],r[5],'gepland');
-    if(hasSplit) addRow(r[8],r[9],r[10],r[11],r[12],r[13],'ongepland');
+    if(hasSplit) addRow(r[ongOffset],r[ongOffset+1],r[ongOffset+2],r[ongOffset+3],r[ongOffset+4],r[ongOffset+5],'ongepland');
   }
 
   return{weekNum,yearNum,label:`Week ${weekNum}, ${yearNum}`,rows:rows.filter(r=>r.omschrijving)};
