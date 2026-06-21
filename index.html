@@ -27,11 +27,12 @@
   .topbar-left{display:flex;align-items:center;gap:16px}
   .logo{font-size:15px;font-weight:600;color:#fff}
   .logo span{color:#00DD39}
-  .nav{display:flex;gap:2px}
+  .nav{display:flex;gap:2px;flex-wrap:nowrap}
   .nt{font-size:13px;padding:5px 13px;border-radius:7px;border:none;background:transparent;cursor:pointer;color:rgba(255,255,255,0.75)}
   .nt:hover{background:rgba(255,255,255,0.12)}
   .nt.active{background:rgba(255,255,255,0.18);color:#fff;font-weight:500}
-  .nt.wk{font-size:12px;padding:4px 10px}
+  .nt.wk{font-size:12px;padding:4px 10px;white-space:nowrap;flex-shrink:0}
+  #wkTabs{display:flex;gap:2px;flex-wrap:nowrap;overflow-x:auto}
   .nt.add{color:#00DD39;border:1px dashed rgba(0,221,57,0.5);background:transparent}
   .nt.add:hover{background:rgba(0,221,57,0.1)}
   .upload-btn{display:flex;align-items:center;gap:7px;font-size:13px;padding:6px 14px;border-radius:7px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);cursor:pointer;color:#fff;font-weight:500}
@@ -141,24 +142,7 @@
   </div>
   <div style="display:flex;gap:8px;align-items:center">
     <span class="user-info" id="userInfo"></span>
-    <button class="admin-only upload-btn" title="Genereer een opgemaakt management-rapport met grafieken" onclick="exportManagementReport()" style="background:rgba(0,221,57,0.18);border-color:rgba(0,221,57,0.4)">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.1-2.8-2.8L7 14"/></svg>
-      Management rapport
-    </button>
-    <button class="admin-only upload-btn" title="Data exporteren als bestand voor SharePoint" onclick="exportData()">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Data exporteren
-    </button>
-    <label class="admin-only upload-btn" title="Databestand importeren">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Data importeren
-      <input type="file" id="dataImport" accept=".xlsx,.xls" style="display:none" onchange="importData(this)">
-    </label>
-    <label class="admin-only upload-btn" title="Excel uploaden">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Excel uploaden
-      <input type="file" id="topUpload" accept=".xlsx,.xls" style="display:none" onchange="handleExcelUpload(this)">
-    </label>
+    <input type="file" id="topUpload" accept=".xlsx,.xls" style="display:none" onchange="handleExcelUpload(this)">
     <button class="logout-btn" onclick="wijzigWachtwoord()" style="margin-right:4px">&#128274; Wachtwoord wijzigen</button>
     <button class="logout-btn" onclick="signOut()">Uitloggen</button>
   </div>
@@ -506,205 +490,6 @@ function showGlobalStatus(msg,type){
   setTimeout(()=>{el.innerHTML='';},7000);
 }
 
-
-function exportManagementReport(){
-  const payload=JSON.stringify({weeks});
-  const prompt=`Maak een management-rapport (Excel) op basis van deze SAP PM weekdata, met opgemaakte KPI-tabel en lijn/staafgrafieken in Heidelberg Materials huisstijl:\n\n${payload}`;
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(payload).then(()=>{
-      showGlobalStatus('Weekdata gekopieerd naar klembord. Plak dit in de chat met Claude samen met het verzoek om een management-rapport te genereren.','info');
-    }).catch(()=>{});
-  }
-}
-
-function exportData(){
-  const wb=XLSX.utils.book_new();
-
-  // Samenvatting tabblad
-  const summaryRows=[['Week','Periode','Totaal WO\'s','Afgerond','Niet uitgevoerd','Deels/UC','Gepland','Ongepland','% uitgevoerd']];
-  weeks.forEach(w=>{
-    const k=kpis(w.rows);
-    summaryRows.push([w.week,w.label,k.t,k.ja,k.nee,k.d,k.g,k.o,k.pct+'%']);
-  });
-  summaryRows.push([]);
-  summaryRows.push(['Geëxporteerd op',new Date().toLocaleString('nl-NL')]);
-  const wsSummary=XLSX.utils.aoa_to_sheet(summaryRows);
-  wsSummary['!cols']=[{wch:8},{wch:18},{wch:11},{wch:10},{wch:14},{wch:10},{wch:10},{wch:11},{wch:11}];
-  XLSX.utils.book_append_sheet(wb,wsSummary,'Samenvatting');
-
-  // Eén tabblad per week met dezelfde structuur als de dashboard-tabel
-  weeks.forEach(w=>{
-    const header=['Dag','Order','Omschrijving','Uitvoerende(n)','Type','Uitgevoerd'];
-    const statusLabel={ja:'Ja',nee:'Nee',deels:'Deels',uc:'Under Construction'};
-    const rows=[header];
-    w.rows.forEach(r=>{
-      rows.push([r.day,r.wo,r.omschrijving,r.wie,r.type==='gepland'?'Gepland':'Ongepland',statusLabel[r.status]||r.status]);
-    });
-    const ws=XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols']=[{wch:5},{wch:12},{wch:50},{wch:22},{wch:11},{wch:18}];
-    // Sla het weeklabel op in cel H1 zodat import dit kan terugvinden
-    XLSX.utils.sheet_add_aoa(ws,[['Week',w.week,'Periode',w.label]],{origin:'H1'});
-    XLSX.utils.book_append_sheet(wb,ws,`W${w.week}`);
-  });
-
-  const ts=new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
-  const fname=`sap_pm_data_${ts}.xlsx`;
-  XLSX.writeFile(wb,fname);
-  showGlobalStatus(`Excel geëxporteerd: <b>${fname}</b> — zet dit bestand op SharePoint zodat collega's het kunnen importeren.`,'success');
-}
-
-function importData(inp){
-  if(!inp.files.length) return;
-  if(!isAdmin){showGlobalStatus('Geen rechten om data te importeren.','error');return;}
-  const file=inp.files[0];
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    try{
-      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false});
-      let added=0,updated=0,skipped=0;
-
-      // Dag-nummer naar dagnaam mapping (SAP weekplanning gebruikt Excel-datumgetallen)
-      const dagNrMap={};
-      // Genereer mapping voor 2026 (46000-serie)
-      const dagNamen=['Ma','Di','Wo','Do','Vr','Za','Zo'];
-      for(let i=46100;i<46400;i++) dagNrMap[i.toString()]=dagNamen[(i-46146+0)%7]||'Ma';
-
-      wb.SheetNames.forEach(name=>{
-        if(name==='Samenvatting') return;
-        const ws=wb.Sheets[name];
-        const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        if(!raw.length) return;
-
-        // ── Weeknummer bepalen ──
-        let weekNum=null,label=null;
-        for(let ri=0;ri<Math.min(5,raw.length);ri++){
-          const row=raw[ri]||[];
-          for(let j=0;j<row.length;j++){
-            const val=(row[j]||'').toString().trim().toLowerCase();
-            if(val==='week'&&row[j+1]) weekNum=parseInt(row[j+1]);
-            if(val==='periode'&&row[j+1]) label=(row[j+1]||'').toString();
-          }
-        }
-        if(!weekNum){
-          const m=name.match(/(\d+)/);
-          if(m) weekNum=parseInt(m[1]);
-        }
-        if(!weekNum){skipped++;return;}
-        if(!label) label=`Week ${weekNum}`;
-
-        const rows=[];
-
-        // ── Detecteer format ──
-        // Format A: export format (Dag, Order, Omschrijving, Uitvoerende(n), Type, Uitgevoerd)
-        // Format B: SAP origineel (Werkzaamheden, Order, Uitvoerende, Uitvoerende, Uitvoerende, Uitgevoerd)
-        const allHeaders=raw.map(r=>(r[0]||'').toString().trim().toLowerCase());
-        const hasExportHeader=raw.some(r=>
-          (r||[]).some(c=>(c||'').toString().trim().toLowerCase()==='omschrijving'));
-        
-        if(hasExportHeader){
-          // Format A — eigen export
-          let headerIdx=raw.findIndex(r=>(r||[]).some(c=>(c||'').toString().trim().toLowerCase()==='omschrijving'));
-          if(headerIdx<0){skipped++;return;}
-          const headerRow=raw[headerIdx].map(x=>(x||'').toString().trim().toLowerCase());
-          const idxDay=headerRow.indexOf('dag');
-          const idxOrder=headerRow.indexOf('order');
-          const idxOms=headerRow.indexOf('omschrijving');
-          const idxWie=headerRow.indexOf('uitvoerende(n)');
-          const idxType=headerRow.indexOf('type');
-          const idxStat=headerRow.findIndex(h=>h==='uitgevoerd'||h==='status');
-          
-          for(let i=headerIdx+1;i<raw.length;i++){
-            const r=raw[i];
-            const oms=(r[idxOms]||'').toString().trim();
-            if(!oms) continue;
-            const typeRaw=(r[idxType]||'').toString().trim().toLowerCase();
-            rows.push({
-              day:(r[idxDay]||'').toString().trim()||'Ma',
-              wo:(r[idxOrder]||'—').toString().trim()||'—',
-              omschrijving:oms,
-              wie:(r[idxWie]||'—').toString().trim()||'—',
-              type:typeRaw.includes('ongepland')?'ongepland':'gepland',
-              status:parseStatus((r[idxStat]||'').toString())
-            });
-          }
-        } else {
-          // Format B — SAP originele weekplanning
-          // Bepaal of het gepland/ongepland split format is (week 22+)
-          const hasSplit=raw.some(r=>(r||[]).some(c=>(c||'').toString().includes('Ongeplande werkzaamheden')));
-          let currentDag='Ma';
-          let currentType='gepland';
-          const skipVals=new Set(['werkzaamheden','jaar','week','werkzaamheden (vulwerk)',
-            'geplande werkzaamheden','ongeplande werkzaamheden','hemelvaartsdag',
-            'geen td aanwezig','2e pinksterdag','']);
-
-          for(let i=0;i<raw.length;i++){
-            const r=raw[i]||[];
-            const cel0=(r[0]||'').toString().trim();
-            
-            // Dagnummer (Excel serialnummer zoals 46146)
-            if(/^\d{5}$/.test(cel0)&&dagNrMap[cel0]){
-              currentDag=dagNrMap[cel0];
-              currentType='gepland';
-              continue;
-            }
-            if(skipVals.has(cel0.toLowerCase())) continue;
-            
-            if(hasSplit&&r.length>=14){
-              // Gepland deel (kolommen 0-6)
-              const oms=cel0;
-              const order=(r[1]||'').toString().trim();
-              const wie=[r[2],r[3],r[4]].map(x=>(x||'').toString().trim()).filter(Boolean).join(', ')||'—';
-              const stat=(r[5]||'').toString().trim();
-              if(oms&&oms.toLowerCase()!=='werkzaamheden'){
-                rows.push({day:currentDag,wo:(order ? order : '—'),omschrijving:oms,wie,type:'gepland',status:parseStatus(stat)});
-              }
-              // Ongepland deel (kolommen 8+)
-              const oms2=(r[8]||'').toString().trim();
-              const order2=(r[9]||'').toString().trim();
-              const wie2=[r[10],r[11],r[12]].map(x=>(x||'').toString().trim()).filter(Boolean).join(', ')||'—';
-              const stat2=(r[13]||'').toString().trim();
-              if(oms2&&oms2.toLowerCase()!=='werkzaamheden'){
-                rows.push({day:currentDag,wo:order2||'—',omschrijving:oms2,wie:wie2,type:'ongepland',status:parseStatus(stat2)});
-              }
-            } else if(r.length>=2){
-              const oms=cel0;
-              const order=(r[1]||'').toString().trim();
-              const wie=[r[2],r[3],r[4]].map(x=>(x||'').toString().trim()).filter(Boolean).join(', ')||'—';
-              const stat=(r[5]||'').toString().trim();
-              if(oms&&oms.toLowerCase()!=='werkzaamheden'){
-                rows.push({day:currentDag,wo:(order ? order : '—'),omschrijving:oms,wie,type:'gepland',status:parseStatus(stat)});
-              }
-            }
-          }
-        }
-
-        if(!rows.length){skipped++;return;}
-        const wid='w'+weekNum;
-        const newWeek={id:wid,week:weekNum,label,rows,_needsSave:true};
-        const idx=weeks.findIndex(w=>w.id===wid);
-        if(idx>=0){weeks[idx]=newWeek;updated++;}
-        else{weeks.push(newWeek);added++;}
-      });
-
-      weeks.sort((a,b)=>a.week-b.week);
-      const toSave=weeks.filter(w=>w._needsSave);
-      for(const w of toSave){
-        try{await saveWeekToDB(w);delete w._needsSave;}catch(e){}
-      }
-      rebuildWkPages();refreshFilter();refreshTabs();renderDash();
-      showPage('dashboard');
-      let msg=`Excel geïmporteerd — ${added} week(en) toegevoegd, ${updated} bijgewerkt`;
-      if(skipped) msg+=`, ${skipped} tabblad(en) overgeslagen`;
-      msg+='.';
-      showGlobalStatus(msg,'success');
-    } catch(err){
-      showGlobalStatus('Fout bij importeren: '+err.message,'error');
-      console.error('Import error:',err);
-    }
-  };
-  reader.readAsArrayBuffer(file);
-  inp.value='';
-}
 
 function getDefaultWeeks(){return[
     {id:'w19',week:19,label:'4–8 mei 2026',rows:[
