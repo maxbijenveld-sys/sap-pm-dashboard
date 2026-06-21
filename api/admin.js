@@ -1,16 +1,56 @@
 const SUPABASE_URL = 'https://gohmnfgpczaeoysamlwy.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_eoIJ0jmspVLW9u-9u7QeNA_IXTD8EwY';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+// Zelfde lijst als ADMIN_EMAILS in index.html
+const ADMIN_EMAILS = [
+  'maxbijenveld@hotmail.com',
+  'max.beijenveld.ext@heidelbergmaterials.com'
+];
+
+// Verifieert het meegegeven Supabase-token en geeft het e-mailadres terug
+// als de aanvrager admin is, anders null. Voorkomt dat deze endpoint
+// (die de service role key gebruikt) door niet-admins of anonieme
+// bezoekers aangeroepen kan worden.
+async function requireAdmin(req) {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token) return null;
+
+  const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
+  });
+  if (!userRes.ok) return null;
+  const user = await userRes.json();
+  const email = (user?.email || '').toLowerCase().trim();
+  if (!email) return null;
+
+  if (ADMIN_EMAILS.includes(email)) return { email, id: user.id };
+
+  const roleRes = await fetch(`${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}&select=role`, {
+    headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` }
+  });
+  if (!roleRes.ok) return null;
+  const roles = await roleRes.json();
+  if (Array.isArray(roles) && roles[0]?.role === 'admin') return { email, id: user.id };
+  return null;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const action = req.query.action;
 
   if (!SUPABASE_SERVICE_KEY) {
     return res.status(500).json({ error: 'SUPABASE_SERVICE_KEY niet geconfigureerd' });
+  }
+
+  const admin = await requireAdmin(req);
+  if (!admin) {
+    return res.status(401).json({ error: 'Niet geautoriseerd' });
   }
 
   const authHeaders = {
@@ -61,6 +101,9 @@ export default async function handler(req, res) {
     // ── Gebruiker verwijderen ──
     if (action === 'delete-user') {
       const userId = req.query.userId || '';
+      if (userId === admin.id) {
+        return res.status(400).json({ error: 'Je kunt jezelf niet verwijderen' });
+      }
       await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, { method: 'DELETE', headers: authHeaders });
       return res.status(200).json({ success: true });
     }

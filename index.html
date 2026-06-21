@@ -4,112 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAP PM Weekplanning Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-
-// ── Reden Analyse ──────────────────────────────────────────────
-async function loadRedenAnalyse() {
-  try {
-    // Query alle weekplanning rows met 'reden' kolom (W26+)
-    const {data, error} = await supabase
-      .from('weekplanning')
-      .select('reden')
-      .not('reden', 'is', null)
-      .gte('week', 26);
-    
-    if (error) throw error;
-    
-    // Count redenen
-    const redenCounts = {};
-    (data || []).forEach(row => {
-      if (row.reden && row.reden.trim()) {
-        const r = row.reden.trim();
-        redenCounts[r] = (redenCounts[r] || 0) + 1;
-      }
-    });
-    
-    const totalNotExecuted = Object.values(redenCounts).reduce((a, b) => a + b, 0);
-    
-    // Sort by count
-    const sorted = Object.entries(redenCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
-    
-    // Render table
-    const tbody = document.getElementById('redenTableBody');
-    if (sorted.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888;padding:20px 10px">Geen data beschikbaar</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = sorted.map(([reden, count]) => {
-      const pct = ((count / totalNotExecuted) * 100).toFixed(1);
-      return `<tr>
-        <td>${reden}</td>
-        <td style="text-align:right;font-weight:500">${count}</td>
-        <td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:6px;background:#EAF2ED;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#004E2B"></div></div><span style="font-size:11px;color:#888;min-width:30px">${pct}%</span></div></td>
-      </tr>`;
-    }).join('');
-    
-  } catch (error) {
-    console.error('Fout bij laden reden analyse:', error);
-    document.getElementById('redenTableBody').innerHTML = '<tr><td colspan="3" style="color:#dc2626;padding:10px">Fout: ' + error.message + '</td></tr>';
-  }
-}
-
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
-
-// ── Reden Analyse ──────────────────────────────────────────────
-async function loadRedenAnalyse() {
-  try {
-    // Query alle weekplanning rows met 'reden' kolom (W26+)
-    const {data, error} = await supabase
-      .from('weekplanning')
-      .select('reden')
-      .not('reden', 'is', null)
-      .gte('week', 26);
-    
-    if (error) throw error;
-    
-    // Count redenen
-    const redenCounts = {};
-    (data || []).forEach(row => {
-      if (row.reden && row.reden.trim()) {
-        const r = row.reden.trim();
-        redenCounts[r] = (redenCounts[r] || 0) + 1;
-      }
-    });
-    
-    const totalNotExecuted = Object.values(redenCounts).reduce((a, b) => a + b, 0);
-    
-    // Sort by count
-    const sorted = Object.entries(redenCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
-    
-    // Render table
-    const tbody = document.getElementById('redenTableBody');
-    if (sorted.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888;padding:20px 10px">Geen data beschikbaar</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = sorted.map(([reden, count]) => {
-      const pct = ((count / totalNotExecuted) * 100).toFixed(1);
-      return `<tr>
-        <td>${reden}</td>
-        <td style="text-align:right;font-weight:500">${count}</td>
-        <td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:6px;background:#EAF2ED;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#004E2B"></div></div><span style="font-size:11px;color:#888;min-width:30px">${pct}%</span></div></td>
-      </tr>`;
-    }).join('');
-    
-  } catch (error) {
-    console.error('Fout bij laden reden analyse:', error);
-    document.getElementById('redenTableBody').innerHTML = '<tr><td colspan="3" style="color:#dc2626;padding:10px">Fout: ' + error.message + '</td></tr>';
-  }
-}
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
   .login-screen{display:none;position:fixed;inset:0;background:#004E2B;z-index:999;flex-direction:column;align-items:center;justify-content:center}
   .login-box{background:#fff;border-radius:14px;padding:40px 36px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
@@ -239,8 +135,7 @@ async function loadRedenAnalyse() {
       <button class="nt active" onclick="showPage('dashboard')">&#9632; Dashboard</button>
       <button class="nt" onclick="showPage('backlog')">&#9888; Backlog</button>
       <span id="wkTabs"></span>
-      <button class="nt add" onclick="showPage('addweek')"><button class="nt add" onclick="showTab('upload')" style="margin-left:auto">+ Upload</button>
-  + Week toevoegen</button>
+      <button class="nt add" onclick="showPage('addweek')" style="margin-left:auto">+ Week toevoegen</button>
       <button class="nt admin-only" id="gebruikerTab" onclick="showPage('gebruikers')" style="color:#00DD39;display:none">&#128100; Gebruikers</button>
     </nav>
   </div>
@@ -438,50 +333,15 @@ async function sbFetch(path,opts={}){
   return r.status===204?null:r.json();
 }
 
-async function loadWeekplanningFromDB(){
+async function loadWeeksFromDB(){
   try {
-    // Laad ALLES uit weekplanning tabel - GEEN filtering
-    const {data, error} = await supabase
-      .from('weekplanning')
-      .select('*')
-      .order('week', {ascending: true});
-    
-    if (error) throw error;
-    
-    // Bouw weeks array uit weekplanning data
-    weeks = [];
-    const weekMap = {};
-    
-    (data || []).forEach(row => {
-      const wk = row.week;
-      if (!weekMap[wk]) {
-        weekMap[wk] = {
-          id: `w${wk}`,
-          week: wk,
-          year: 2026,
-          rows: []
-        };
-        weeks.push(weekMap[wk]);
-      }
-      
-      weekMap[wk].rows.push({
-        week: wk,
-        day: null, // SAP data heeft geen dag
-        order: row.order || null, // NULL orders blijven NULL (niet filteren!)
-        omschrijving: row.werkzaamheden,
-        executor1: row.executor1,
-        executor2: row.executor2,
-        executor3: row.executor3,
-        wie: [row.executor1, row.executor2, row.executor3]
-          .filter(x => x && x.trim())
-          .join(', ') || '—',
-        type: 'gepland', // TODO: detect from data
-        status: row.uitgevoerd ? row.uitgevoerd.toLowerCase() : null,
-        reden: row.reden,
-        opmerking: row.opmerking
-      });
-    });
-    
+    const data = await sbFetch('/rest/v1/weeks?select=*&order=week.asc');
+    weeks = (data || []).map(w => ({
+      id: w.id,
+      week: w.week,
+      label: w.label,
+      rows: w.rows || []
+    }));
     return weeks;
   } catch (e) {
     showGlobalStatus('Fout bij laden weekplanning: ' + e.message, 'error');
@@ -581,8 +441,7 @@ function showAppShell(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appShell').style.display='block';
   // Knoppen tonen op basis van hardcoded admin lijst
-  const ADMINS=['maxbijenveld@hotmail.com','max.beijenveld.ext@heidelbergmaterials.com'];
-  isAdmin=ADMINS.includes((currentUser?.user?.email||'').toLowerCase().trim());
+  isAdmin=ADMIN_EMAILS.includes((currentUser?.user?.email||'').toLowerCase().trim());
   console.log('Ingelogd als:', currentUser?.user?.email, '| Admin:', isAdmin);
   document.querySelectorAll('.admin-only').forEach(el=>{
     el.style.display=isAdmin?'':'none';
@@ -613,8 +472,7 @@ async function handleLogin(){
 }
 
 async function initApp(){
-  const ADMINS=['maxbijenveld@hotmail.com','max.beijenveld.ext@heidelbergmaterials.com'];
-  isAdmin=ADMINS.includes((currentUser?.user?.email||'').toLowerCase().trim());
+  isAdmin=ADMIN_EMAILS.includes((currentUser?.user?.email||'').toLowerCase().trim());
   showAppShell();
   showGlobalStatus('Data laden...','info');
   try{
@@ -654,10 +512,9 @@ function exportManagementReport(){
   const prompt=`Maak een management-rapport (Excel) op basis van deze SAP PM weekdata, met opgemaakte KPI-tabel en lijn/staafgrafieken in Heidelberg Materials huisstijl:\n\n${payload}`;
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(payload).then(()=>{
-      showGlobalStatus('Weekdata gekopieerd naar klembord. Plak dit in de chat met Claude samen met het verzoek om een management-rapport te genereren — of klik nu om het direct te versturen.','info');
+      showGlobalStatus('Weekdata gekopieerd naar klembord. Plak dit in de chat met Claude samen met het verzoek om een management-rapport te genereren.','info');
     }).catch(()=>{});
   }
-  sendPrompt(prompt);
 }
 
 function exportData(){
@@ -1385,6 +1242,7 @@ function showPage(id){
   if(id==='dashboard'){
     document.querySelector('.nt').classList.add('active');
     renderDash();
+    loadRedenAnalyse();
   } else if(id==='backlog'){
     document.querySelectorAll('.nt')[1].classList.add('active');
     renderBacklog();
@@ -1551,7 +1409,9 @@ async function loadGebruikers(){
   const el=document.getElementById('gebruikersLijst');
   el.innerHTML='<div style="padding:1rem;text-align:center;color:#888">Laden...</div>';
   try{
-    const r=await fetch(`/api/admin?action=list-users`);
+    const r=await fetch(`/api/admin?action=list-users`,{
+      headers:{'Authorization':'Bearer '+currentUser?.access_token}
+    });
     if(!r.ok) throw new Error(`API fout ${r.status}`);
     const data=await r.json();
     const authUsers=data.users||[];
@@ -1599,21 +1459,22 @@ async function loadGebruikers(){
 }
 
 async function voegGebruikerToe(){
+  if(!isAdmin){showGlobalStatus('Geen rechten om gebruikers toe te voegen.','error');return;}
   const naam=document.getElementById('newUserNaam').value.trim();
   const email=document.getElementById('newUserEmail').value.trim();
   const rol=document.getElementById('newUserRol').value;
   const status=document.getElementById('gebruikerStatus');
   if(!email){status.style.color='#dc2626';status.textContent='Vul een e-mailadres in';return;}
   status.style.color='#888';status.textContent='Bezig...';
-  
+
   try{
     // Genereer tijdelijk wachtwoord
     const tempPw='Welkom'+Math.floor(Math.random()*9000+1000)+'!';
-    
+
     // Maak account aan via serverless function
     const r=await fetch(`/api/admin?action=create-user`,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser?.access_token},
       body:JSON.stringify({email,password:tempPw,naam})
     });
     const data=await r.json();
@@ -1652,10 +1513,12 @@ async function voegGebruikerToe(){
 }
 
 async function verwijderGebruiker(userId,email){
+  if(!isAdmin){showGlobalStatus('Geen rechten om gebruikers te verwijderen.','error');return;}
   if(!confirm(`Gebruiker ${email} verwijderen?`)) return;
   try{
-    await fetch(`/api/admin?action=delete-user&userId=${userId}`,{
-      method:'DELETE'
+    await fetch(`/api/admin?action=delete-user&userId=${encodeURIComponent(userId)}`,{
+      method:'DELETE',
+      headers:{'Authorization':'Bearer '+currentUser?.access_token}
     });
     await fetch(`${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}`,{
       method:'DELETE',
@@ -1672,50 +1535,42 @@ async function verwijderGebruiker(userId,email){
 // ── Reden Analyse ──────────────────────────────────────────────
 async function loadRedenAnalyse() {
   try {
-    // Query alle weekplanning rows met 'reden' kolom (W26+)
-    const {data, error} = await supabase
-      .from('weekplanning')
-      .select('reden')
-      .not('reden', 'is', null)
-      .gte('week', 26);
-    
-    if (error) throw error;
-    
-    // Count redenen
+    const data = await sbFetch('/rest/v1/weekplanning?select=reden&week=gte.26&not=reden.is.null');
     const redenCounts = {};
     (data || []).forEach(row => {
-      if (row.reden && row.reden.trim()) {
-        const r = row.reden.trim();
+      const reden = row?.reden;
+      if (reden && reden.toString().trim()) {
+        const r = reden.toString().trim();
         redenCounts[r] = (redenCounts[r] || 0) + 1;
       }
     });
-    
+
     const totalNotExecuted = Object.values(redenCounts).reduce((a, b) => a + b, 0);
-    
-    // Sort by count
     const sorted = Object.entries(redenCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
-    
-    // Render table
+
     const tbody = document.getElementById('redenTableBody');
+    if (!tbody) return;
     if (sorted.length === 0) {
       tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888;padding:20px 10px">Geen data beschikbaar</td></tr>';
       return;
     }
-    
+
     tbody.innerHTML = sorted.map(([reden, count]) => {
-      const pct = ((count / totalNotExecuted) * 100).toFixed(1);
+      const pct = totalNotExecuted > 0 ? ((count / totalNotExecuted) * 100).toFixed(1) : '0.0';
       return `<tr>
         <td>${reden}</td>
         <td style="text-align:right;font-weight:500">${count}</td>
         <td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:6px;background:#EAF2ED;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#004E2B"></div></div><span style="font-size:11px;color:#888;min-width:30px">${pct}%</span></div></td>
       </tr>`;
     }).join('');
-    
   } catch (error) {
     console.error('Fout bij laden reden analyse:', error);
-    document.getElementById('redenTableBody').innerHTML = '<tr><td colspan="3" style="color:#dc2626;padding:10px">Fout: ' + error.message + '</td></tr>';
+    const tbody = document.getElementById('redenTableBody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="3" style="color:#dc2626;padding:10px">Fout: ' + (error.message || 'Onbekende fout') + '</td></tr>';
+    }
   }
 }
 
