@@ -679,7 +679,6 @@ function parseExcelSheet(raw){
     const ol=o.toLowerCase();
     if(ol.includes('pinkster')||ol.includes('hemelvaartsdag')||ol==='geen td aanwezig') return;
     const s=parseStatus(stat);
-    if(!s&&!order) return;
     const wie=[w1,w2,w3].map(x=>(x||'').toString().trim()).filter(x=>x&&x!=='-'&&x!=='0').join(', ')||'—';
     rows.push({day:currentDag,wo:((order||'').toString().trim())||'—',omschrijving:o,wie,type,status:s||'nee'});
   };
