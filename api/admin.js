@@ -2,16 +2,11 @@ const SUPABASE_URL = 'https://gohmnfgpczaeoysamlwy.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_eoIJ0jmspVLW9u-9u7QeNA_IXTD8EwY';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-// Zelfde lijst als ADMIN_EMAILS in index.html
-const ADMIN_EMAILS = [
-  'maxbijenveld@hotmail.com',
-  'max.beijenveld.ext@heidelbergmaterials.com'
-];
-
 // Verifieert het meegegeven Supabase-token en geeft het e-mailadres terug
 // als de aanvrager admin is, anders null. Voorkomt dat deze endpoint
 // (die de service role key gebruikt) door niet-admins of anonieme
-// bezoekers aangeroepen kan worden.
+// bezoekers aangeroepen kan worden. Admin-status komt uit de
+// user_roles-tabel (single source of truth, zelfde als index.html).
 async function requireAdmin(req) {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
@@ -24,8 +19,6 @@ async function requireAdmin(req) {
   const user = await userRes.json();
   const email = (user?.email || '').toLowerCase().trim();
   if (!email) return null;
-
-  if (ADMIN_EMAILS.includes(email)) return { email, id: user.id };
 
   const roleRes = await fetch(`${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}&select=role`, {
     headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` }

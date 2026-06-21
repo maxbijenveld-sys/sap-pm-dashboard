@@ -347,19 +347,8 @@ async function deleteWeekFromDB(wid){
 }
 
 // ── Admin check ───────────────────────────────────────────────
-// Admin e-mailadressen — voeg hier nieuwe admins toe
-const ADMIN_EMAILS = [
-  'maxbijenveld@hotmail.com',
-  'max.beijenveld.ext@heidelbergmaterials.com'
-];
-
+// Admin-status komt uit de user_roles-tabel (single source of truth).
 async function checkAdminRole(email, accessToken){
-  // Stap 1: check hardcoded admin lijst (altijd betrouwbaar)
-  if(ADMIN_EMAILS.includes((email||'').toLowerCase().trim())){
-    console.log('Admin check: match via hardcoded lijst voor', email);
-    return true;
-  }
-  // Stap 2: fallback via Supabase database
   try{
     const r=await fetch(`${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}&select=role`,{
       headers:{
@@ -369,7 +358,6 @@ async function checkAdminRole(email, accessToken){
       }
     });
     const data=await r.json();
-    console.log('Admin check via DB:', email, data);
     return data&&data[0]&&data[0].role==='admin';
   }catch(e){
     console.error('Admin check fout:', e);
@@ -424,9 +412,7 @@ function showLoginScreen(){
 function showAppShell(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appShell').style.display='block';
-  // Knoppen tonen op basis van hardcoded admin lijst
-  isAdmin=ADMIN_EMAILS.includes((currentUser?.user?.email||'').toLowerCase().trim());
-  console.log('Ingelogd als:', currentUser?.user?.email, '| Admin:', isAdmin);
+  // isAdmin is op dit punt al gezet door initApp() via checkAdminRole()
   document.querySelectorAll('.admin-only').forEach(el=>{
     el.style.display=isAdmin?'':'none';
   });
@@ -456,7 +442,7 @@ async function handleLogin(){
 }
 
 async function initApp(){
-  isAdmin=ADMIN_EMAILS.includes((currentUser?.user?.email||'').toLowerCase().trim());
+  isAdmin=await checkAdminRole(currentUser?.user?.email, currentUser?.access_token);
   showAppShell();
   showGlobalStatus('Data laden...','info');
   try{
