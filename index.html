@@ -646,89 +646,62 @@ function parseStatus(s){
   return'nee';
 }
 
-const DAY_MAP={
-  'monday':'Ma','tuesday':'Di','wednesday':'Wo','thursday':'Do','friday':'Vr',
-  'maandag':'Ma','dinsdag':'Di','woensdag':'Wo','donderdag':'Do','vrijdag':'Vr'
-};
+const DAGNAMEN=['Ma','Di','Wo','Do','Vr'];
 
-function excelDateToLabel(serial){
-  if(!serial||isNaN(serial)) return'';
-  const d=new Date(Math.round((serial-25569)*86400*1000));
-  return d.toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
-}
-
-function parseExcel(data){
-  const wb=XLSX.read(data,{type:'array',cellDates:false});
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-
+// Eén weektabblad (raw = sheet_to_json met header:1) omzetten naar {weekNum,yearNum,label,rows}.
+// SAP-weekplanning markeert elke dag met een Excel-datumserienummer (5 cijfers) in kolom A —
+// er staan altijd precies 5 van die markeringen per week (Ma t/m Vr), dus de volgorde waarin
+// ze voorkomen bepaalt de dag, zonder dat we het exacte serienummer hoeven te kennen.
+function parseExcelSheet(raw){
   let weekNum=null, yearNum=2026;
-  let rows=[];
-  let currentDay=null;
-  let geplSection=false, ongSection=false;
-
-  // Find week/year
   for(let i=0;i<Math.min(10,raw.length);i++){
-    const r=raw[i];
+    const r=raw[i]||[];
     for(let j=0;j<r.length;j++){
       const v=(r[j]||'').toString().trim().toLowerCase();
       if(v==='week'&&r[j+1]) weekNum=parseInt(r[j+1]);
       if(v==='jaar'&&r[j+1]) yearNum=parseInt(r[j+1])||2026;
     }
   }
+  if(!weekNum) return null;
 
-  // Parse row by row
+  // W22+ splitst Gepland (kol 0-6) en Ongepland (kol 8-14) in twee kolomblokken
+  const hasSplit=raw.some(r=>(r||[]).some(c=>(c||'').toString().toLowerCase().includes('ongeplande werkzaamheden')));
+  const skipVals=new Set(['werkzaamheden','werkzaamheden (vulwerk)','jaar','week',
+    'geplande werkzaamheden','ongeplande werkzaamheden','hemelvaartsdag',
+    'geen td aanwezig','2e pinksterdag','']);
+
+  let currentDag=null, dayIdx=-1;
+  const rows=[];
+
+  const addRow=(omschr,order,w1,w2,w3,stat,type)=>{
+    const o=(omschr||'').toString().trim();
+    if(!o||skipVals.has(o.toLowerCase())) return;
+    const ol=o.toLowerCase();
+    if(ol.includes('pinkster')||ol.includes('hemelvaartsdag')||ol==='geen td aanwezig') return;
+    const s=parseStatus(stat);
+    if(!s&&!order) return;
+    const wie=[w1,w2,w3].map(x=>(x||'').toString().trim()).filter(x=>x&&x!=='-'&&x!=='0').join(', ')||'—';
+    rows.push({day:currentDag,wo:((order||'').toString().trim())||'—',omschrijving:o,wie,type,status:s||'nee'});
+  };
+
   for(let i=0;i<raw.length;i++){
-    const r=raw[i];
+    const r=raw[i]||[];
     const c0=(r[0]||'').toString().trim();
-    const c1=(r[1]||'').toString().trim();
 
-    // Detect day headers (contains day name + date)
-    const c0lo=c0.toLowerCase();
-    for(const [eng,nl] of Object.entries(DAY_MAP)){
-      if(c0lo.startsWith(eng)||c0lo.startsWith(nl)){
-        currentDay=nl;
-        break;
-      }
+    // Dagmarkering: Excel-datumserienummer in kolom A
+    if(/^\d{5}$/.test(c0)){
+      dayIdx++;
+      currentDag=DAGNAMEN[dayIdx]||'Vr';
+      continue;
     }
+    if(skipVals.has(c0.toLowerCase())) continue;
+    if(!currentDag) continue;
 
-    // Detect section headers
-    if(c0lo.includes('geplande werkzaamheden')) geplSection=true;
-    if(c0lo.includes('ongeplande werkzaamheden')) geplSection=false;
-
-    // Skip header rows (Werkzaamheden / Order headers)
-    if(c0lo==='werkzaamheden'||c0lo==='werkzaamheden (vulwerk)') continue;
-    if(!currentDay) continue;
-
-    // Both sides: gepland (cols 0-6) and ongepland (cols 8-14)
-    // Gepland side: col0=omschr, col1=order, col2-4=uitv, col5=uitgevoerd, col6=opmerking
-    // Ongepland: col8=omschr, col9=order, col10-12=uitv, col13=uitgevoerd, col14=opmerking
-    const addRow=(omschr,order,w1,w2,w3,stat,type)=>{
-      const o=omschr.trim();
-      if(!o||o.toLowerCase()==='werkzaamheden') return;
-      // Skip pure day/holiday labels
-      if(o.toLowerCase().includes('pinkster')||o.toLowerCase().includes('hemelvaartsdag')||o.toLowerCase()==='geen td aanwezig') return;
-      const wie=[w1,w2,w3].map(x=>(x||'').toString().trim()).filter(x=>x&&x!=='-'&&x!=='0').join(', ')||'—';
-      const s=parseStatus(stat);
-      if(!s&&!order) return;
-      rows.push({day:currentDay,wo:((order ? order : '—')).toString().trim(),omschrijving:o,wie,type,status:s||'nee'});
-    };
-
-    // Gepland (left side, cols 0-6)
-    if(c0&&c0.toLowerCase()!=='2e pinksterdag'&&c1!=='Order'){
-      addRow(c0,c1,r[2],r[3],r[4],r[5],'gepland');
-    }
-    // Ongepland (right side, cols 8-14)
-    const c8=(r[8]||'').toString().trim();
-    if(c8&&c8.toLowerCase()!=='werkzaamheden'&&c8.toLowerCase()!=='2e pinksterdag'){
-      addRow(c8,r[9],r[10],r[11],r[12],r[13],'ongepland');
-    }
+    addRow(r[0],r[1],r[2],r[3],r[4],r[5],'gepland');
+    if(hasSplit) addRow(r[8],r[9],r[10],r[11],r[12],r[13],'ongepland');
   }
 
-  // Derive label from first/last day rows if possible
-  const label=weekNum?`Week ${weekNum}, ${yearNum}`:`Week ?, ${yearNum}`;
-
-  return{weekNum,yearNum,label,rows:rows.filter(r=>r.omschrijving)};
+  return{weekNum,yearNum,label:`Week ${weekNum}, ${yearNum}`,rows:rows.filter(r=>r.omschrijving)};
 }
 
 async function handleExcelUpload(inp){
@@ -738,25 +711,46 @@ async function handleExcelUpload(inp){
   const reader=new FileReader();
   reader.onload=async e=>{
     try{
-      const result=parseExcel(new Uint8Array(e.target.result));
-      if(!result.weekNum){
-        showUploadStatus('Weeknummer niet gevonden. Controleer het Excel-format.','error');
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false});
+      const results=wb.SheetNames
+        .filter(name=>name!=='Samenvatting')
+        .map(name=>parseExcelSheet(XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''})))
+        .filter(r=>r&&r.rows.length);
+
+      if(!results.length){
+        showUploadStatus('Geen weken met werkorders gevonden. Controleer het Excel-format.','error');
         return;
       }
-      const wid='w'+result.weekNum;
-      const existing=weeks.findIndex(w=>w.id===wid);
-      const newWeek={id:wid,week:result.weekNum,label:result.label,rows:result.rows};
-      if(existing>=0){
-        if(!confirm(`Week ${result.weekNum} bestaat al (${weeks[existing].rows.length} WO's). Overschrijven?`)) return;
-        weeks[existing]=newWeek;
-      } else {
-        weeks.push(newWeek);
-        weeks.sort((a,b)=>a.week-b.week);
+
+      // Bij één tabblad vragen we bevestiging vóór het overschrijven; bij een bulk-upload
+      // (meerdere weektabbladen in één bestand) overschrijven we direct en tonen we
+      // achteraf een samenvatting.
+      if(results.length===1){
+        const result=results[0];
+        const wid='w'+result.weekNum;
+        const existing=weeks.findIndex(w=>w.id===wid);
+        if(existing>=0&&!confirm(`Week ${result.weekNum} bestaat al (${weeks[existing].rows.length} WO's). Overschrijven?`)) return;
       }
-      await saveWeekToDB(newWeek);
-      rebuildWkPages();refreshFilter();refreshTabs();
-      showUploadStatus(`Week ${result.weekNum} geladen en opgeslagen — ${result.rows.length} werkorders.`,'success');
-      showWkPg(wid);
+
+      let added=0,updated=0;
+      for(const result of results){
+        const wid='w'+result.weekNum;
+        const newWeek={id:wid,week:result.weekNum,label:result.label,rows:result.rows};
+        const existing=weeks.findIndex(w=>w.id===wid);
+        if(existing>=0){weeks[existing]=newWeek;updated++;}
+        else{weeks.push(newWeek);added++;}
+        await saveWeekToDB(newWeek);
+      }
+      weeks.sort((a,b)=>a.week-b.week);
+      rebuildWkPages();refreshFilter();refreshTabs();renderDash();
+
+      if(results.length===1){
+        showUploadStatus(`Week ${results[0].weekNum} geladen en opgeslagen — ${results[0].rows.length} werkorders.`,'success');
+        showWkPg('w'+results[0].weekNum);
+      } else {
+        showUploadStatus(`Excel geïmporteerd — ${added} week(en) toegevoegd, ${updated} bijgewerkt.`,'success');
+        showPage('dashboard');
+      }
     } catch(err){
       showUploadStatus('Fout bij verwerken: '+err.message,'error');
     }
