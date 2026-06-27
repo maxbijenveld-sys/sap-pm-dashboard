@@ -44,8 +44,12 @@
   .fr{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
   .fr label{font-size:13px;color:#666}
   .fr select{font-size:13px;padding:5px 10px;border-radius:7px;border:1px solid #B8CEBC;background:#fff;color:#1a1a18;cursor:pointer}
-  .kg{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}
-  .kc{background:#fff;border:1px solid #D8E5DC;border-radius:10px;padding:14px 16px}
+  .kg{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+  .kc{position:relative;background:#fff;border-radius:14px;padding:14px 16px 13px;box-shadow:0 2px 8px rgba(0,40,20,0.06),0 1px 2px rgba(0,40,20,0.04);overflow:hidden;transition:box-shadow .2s,transform .2s}
+  .kc:hover{box-shadow:0 8px 20px rgba(0,40,20,0.14),0 2px 6px rgba(0,40,20,0.08);transform:translateY(-2px)}
+  .kc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#9aa39d)}
+  .kc .icon{width:28px;height:28px;border-radius:8px;background:color-mix(in srgb, var(--accent,#9aa39d) 14%, white);display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+  .kc .icon svg{width:15px;height:15px;stroke:var(--accent,#9aa39d)}
   .kl{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
   .kv{font-size:24px;font-weight:600;color:#1a1a18}
   .ks{font-size:11px;color:#888;margin-top:3px}
@@ -732,7 +736,18 @@ function sb(s){
   if(s==='uc') return'<span class="badge buc">Under Construction</span>';
   return'<span style="font-size:11px;color:#aaa">—</span>';
 }
-function kc(l,v,s,c){return`<div class="kc"><div class="kl">${l}</div><div class="kv"${c?` style="color:${c}"`:''}>${v}</div><div class="ks">${s}</div></div>`;}
+const KC_ICONS={
+  totaal:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg>',
+  circle:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/></svg>',
+  calendar:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  zap:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>'
+};
+function kc(l,v,s,c,icon){
+  const accent=c||'#9aa39d';
+  return`<div class="kc" style="--accent:${accent}"><div class="icon">${KC_ICONS[icon]||''}</div><div class="kl">${l}</div><div class="kv"${c?` style="color:${c}"`:''}>${v}</div><div class="ks">${s}</div></div>`;
+}
 
 function renderDash(){
   const wf=document.getElementById('fWeek').value;
@@ -748,12 +763,12 @@ function renderDash(){
   }
   const k=kpis(kpiRows);
   document.getElementById('dKpis').innerHTML=
-    kc('Totaal WO\'s',k.t,wf==='all'?'unieke werkorders':'gefilterd')+
-    kc('Afgerond',k.ja,k.pct+'% uitgevoerd','#004E2B')+
-    kc('Niet uitgevoerd',k.nee,'backlog risico','#dc2626')+
-    kc('Deels / UC',k.d,'','#d97706')+
-    kc('Gepland',k.g,Math.round(k.g/(k.t||1)*100)+'%')+
-    kc('Ongepland',k.o,Math.round(k.o/(k.t||1)*100)+'%');
+    kc('Totaal WO\'s',k.t,wf==='all'?'unieke werkorders':'gefilterd',null,'totaal')+
+    kc('Afgerond',k.ja,k.pct+'% uitgevoerd','#004E2B','check')+
+    kc('Niet uitgevoerd',k.nee,'backlog risico','#dc2626','alert')+
+    kc('Deels / UC',k.d,'','#d97706','circle')+
+    kc('Gepland',k.g,Math.round(k.g/(k.t||1)*100)+'%',null,'calendar')+
+    kc('Ongepland',k.o,Math.round(k.o/(k.t||1)*100)+'%',null,'zap');
 
   const singleWeek=fWks.length===1;
   const DAYS=['Ma','Di','Wo','Do','Vr'];
