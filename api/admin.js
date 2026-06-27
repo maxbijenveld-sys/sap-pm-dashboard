@@ -76,22 +76,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ users });
     }
 
-    // ── Eén gebruiker opzoeken op e-mailadres (debug: list-users kan falen
-    // op een corrupt account, dit filtert server-side zodat we het kapotte
-    // account toch kunnen vinden zonder de volledige lijst nodig te hebben) ──
-    if (action === 'find-user') {
-      const email = req.query.email || '';
-      if (!email) return res.status(400).json({ error: 'email-parameter verplicht' });
-      const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`, { headers: authHeaders });
-      const text = await r.text();
-      let data;
-      try { data = JSON.parse(text); } catch(e) { data = null; }
-      if (!r.ok) {
-        return res.status(502).json({ error: `Supabase gaf ${r.status}: ${(data && (data.msg||data.error_description||data.error)) || text.substring(0,300)}` });
-      }
-      return res.status(200).json({ result: data });
-    }
-
     // ── Gebruiker aanmaken (direct met wachtwoord) ──
     if (action === 'create-user') {
       const email = body.email || '';
