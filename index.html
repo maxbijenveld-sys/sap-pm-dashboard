@@ -73,13 +73,17 @@
   .kv{font-size:24px;font-weight:600;color:#1a1a18}
   .ks{font-size:11px;color:#888;margin-top:3px}
   .cr{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-  .cc{background:#fff;border:1px solid #D8E5DC;border-radius:10px;padding:16px 18px}
-  .cct{font-size:13px;color:#666;margin-bottom:8px;font-weight:500}
+  .cc{position:relative;background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,40,20,0.06),0 1px 2px rgba(0,40,20,0.04);overflow:hidden;transition:box-shadow .2s,transform .2s}
+  .cc:hover{box-shadow:0 8px 20px rgba(0,40,20,0.14),0 2px 6px rgba(0,40,20,0.08);transform:translateY(-2px)}
+  .cc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#004E2B)}
+  .cct{font-size:13px;color:#444;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .cc-icon{width:22px;height:22px;border-radius:7px;background:color-mix(in srgb, var(--accent,#004E2B) 14%, white);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .cc-icon svg{width:12px;height:12px;stroke:var(--accent,#004E2B)}
   .leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#666;margin-bottom:10px}
   .leg span{display:flex;align-items:center;gap:5px}
   .ld{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-  .sl{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:20px 0 10px}
-  .tw{background:#fff;border:1px solid #D8E5DC;border-radius:10px;overflow:hidden;margin-bottom:20px;overflow-x:auto}
+  .sl{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:20px 0 10px;border-left:3px solid #004E2B;padding-left:8px}
+  .tw{position:relative;background:#fff;border-radius:14px;overflow:hidden;margin-bottom:20px;overflow-x:auto;box-shadow:0 2px 8px rgba(0,40,20,0.06),0 1px 2px rgba(0,40,20,0.04)}
   table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
   th{text-align:left;font-size:11px;font-weight:600;color:#888;padding:8px 10px;border-bottom:1px solid #D8E5DC;background:#F5FAF7}
   td{padding:7px 10px;border-bottom:1px solid #EAF2ED;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
@@ -143,8 +147,9 @@
     .login-box{padding:28px 20px}
   }
 
-  .reden-table{background:#fff;border:1px solid #D8E5DC;border-radius:10px;padding:16px 18px;margin-bottom:20px}
-  .reden-title{font-size:13px;color:#666;margin-bottom:12px;font-weight:500}
+  .reden-table{position:relative;background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,40,20,0.06),0 1px 2px rgba(0,40,20,0.04)}
+  .reden-table::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:#dc2626}
+  .reden-title{font-size:13px;color:#444;margin-bottom:12px;font-weight:600;display:flex;align-items:center;gap:8px}
 
   </style>
 </head>
@@ -210,7 +215,7 @@
     <div class="kg" id="dKpis"></div>
 <!-- Reden Analyse -->
 <div class="reden-table">
-  <div class="reden-title">Niet uitgevoerd - meest voorkomende redenen</div>
+  <div class="reden-title"><span class="cc-icon" style="--accent:#dc2626"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>Niet uitgevoerd - meest voorkomende redenen</div>
   <div class="tw">
     <table>
       <thead>
@@ -228,16 +233,16 @@
 </div>
 
     <div class="cr">
-      <div class="cc">
-        <div class="cct lc-title">WO's per week — gepland vs. ongepland</div>
+      <div class="cc" style="--accent:#004E2B">
+        <div class="cct"><span class="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span><span class="lc-title">WO's per week — gepland vs. ongepland</span></div>
         <div class="leg">
           <span><span class="ld" style="background:#004E2B"></span>Gepland</span>
           <span><span class="ld" style="background:#00DD39;border:1px dashed #00DD39;background:transparent"></span>Ongepland</span>
         </div>
         <div style="position:relative;height:220px"><canvas id="lc"></canvas></div>
       </div>
-      <div class="cc">
-        <div class="cct bc-title">Uitvoering per week</div>
+      <div class="cc" style="--accent:#1f7a4d">
+        <div class="cct"><span class="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg></span><span class="bc-title">Uitvoering per week</span></div>
         <div class="leg">
           <span><span class="ld" style="background:#004E2B"></span>Ja</span>
           <span><span class="ld" style="background:#dc2626"></span>Nee</span>
@@ -246,8 +251,8 @@
         <div style="position:relative;height:220px"><canvas id="bc"></canvas></div>
       </div>
     </div>
-    <div class="cc" style="margin-bottom:20px">
-      <div class="cct pc-title">Uitvoeringspercentage per week</div>
+    <div class="cc" style="margin-bottom:20px;--accent:#d97706">
+      <div class="cct"><span class="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span><span class="pc-title">Uitvoeringspercentage per week</span></div>
       <div style="position:relative;height:170px"><canvas id="pc"></canvas></div>
     </div>
     <div class="sl">Werkorders overzicht</div>
