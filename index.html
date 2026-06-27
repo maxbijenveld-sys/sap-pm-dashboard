@@ -385,7 +385,9 @@ async function signIn(email,password){
     body:JSON.stringify({email,password})
   });
   const data=await r.json();
-  if(data.error) throw new Error(data.error_description||data.error);
+  // Supabase geeft fouten terug als {code,error_code,msg} (geen "error"-veld),
+  // dus de statuscode is de enige betrouwbare manier om mislukte logins te zien.
+  if(!r.ok) throw new Error(data.msg||data.error_description||data.error||'Inloggen mislukt');
   return data;
 }
 
@@ -396,7 +398,7 @@ async function signUp(email,password){
     body:JSON.stringify({email,password})
   });
   const data=await r.json();
-  if(data.error) throw new Error(data.error_description||data.error);
+  if(!r.ok) throw new Error(data.msg||data.error_description||data.error||'Registreren mislukt');
   return data;
 }
 
@@ -1108,7 +1110,7 @@ async function wijzigWachtwoord(){
       body:JSON.stringify({password:nieuw})
     });
     const data=await r.json();
-    if(data.error) throw new Error(data.error);
+    if(!r.ok) throw new Error(data.msg||data.error_description||data.error||'Wijzigen mislukt');
     showGlobalStatus('✓ Wachtwoord succesvol gewijzigd','success');
   }catch(e){
     showGlobalStatus('Fout bij wijzigen: '+e.message,'error');
