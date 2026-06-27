@@ -63,14 +63,16 @@ export default async function handler(req, res) {
       // Haal auth users op
       const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, { headers: authHeaders });
       const text = await r.text();
-      let users = [];
-      try {
-        const data = JSON.parse(text);
-        users = Array.isArray(data) ? data : (data.users || []);
-      } catch(e) {
+      let data;
+      try { data = JSON.parse(text); }
+      catch(e) {
         console.error('Parse error list-users:', text.substring(0, 200));
-        return res.status(200).json({ users: [] });
+        return res.status(502).json({ error: 'Onleesbaar antwoord van Supabase: ' + text.substring(0, 200) });
       }
+      if (!r.ok) {
+        return res.status(502).json({ error: `Supabase gaf ${r.status}: ${data.msg || data.error_description || data.error || text.substring(0,200)}` });
+      }
+      const users = Array.isArray(data) ? data : (data.users || []);
       return res.status(200).json({ users });
     }
 
