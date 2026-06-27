@@ -9,22 +9,24 @@
 <script src="parser.js"></script>
 <style>
   .login-screen{display:none;position:fixed;inset:0;background:rgba(0,30,17,0.55);z-index:999;flex-direction:column;align-items:center;justify-content:center}
-  #bgFx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
-  #bgFx .blob{position:absolute;border-radius:50%;will-change:transform}
+  #bgFx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;perspective:1200px}
+  #bgFx .scene{position:absolute;inset:-15%;transform-style:preserve-3d;transition:transform .35s cubic-bezier(.2,.8,.2,1);will-change:transform}
+  #bgFx .blob{position:absolute;border-radius:50%}
   #bgFx .blob-inner{width:100%;height:100%;border-radius:50%;filter:blur(70px)}
-  #bgFx .b1{width:50vw;height:50vw;top:-14vw;left:-10vw}
+  #bgFx .b1{width:46vw;height:46vw;top:-10vw;left:-6vw;transform:translateZ(120px)}
   #bgFx .b1 .blob-inner{background:radial-gradient(circle at 32% 32%,#00DD39 0%,#004E2B 68%);opacity:.32;animation:bgDrift1 28s ease-in-out infinite}
-  #bgFx .b2{width:40vw;height:40vw;bottom:-16vw;right:-8vw}
+  #bgFx .b2{width:36vw;height:36vw;bottom:-12vw;right:-4vw;transform:translateZ(-60px)}
   #bgFx .b2 .blob-inner{background:radial-gradient(circle at 60% 40%,#1f8a4f 0%,#00301a 70%);opacity:.3;animation:bgDrift2 34s ease-in-out infinite}
-  #bgFx .b3{width:30vw;height:30vw;top:32vh;right:16vw}
+  #bgFx .b3{width:28vw;height:28vw;top:34vh;right:18vw;transform:translateZ(200px)}
   #bgFx .b3 .blob-inner{background:radial-gradient(circle,#00DD39 0%,transparent 72%);opacity:.18;animation:bgDrift3 23s ease-in-out infinite}
-  #bgFx .b4{width:26vw;height:26vw;bottom:6vh;left:20vw}
+  #bgFx .b4{width:24vw;height:24vw;bottom:8vh;left:22vw;transform:translateZ(-100px)}
   #bgFx .b4 .blob-inner{background:radial-gradient(circle,#cdf2da 0%,transparent 72%);opacity:.22;animation:bgDrift1 31s ease-in-out infinite reverse}
-  @keyframes bgDrift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(2.5vw,2vh) scale(1.08)}}
-  @keyframes bgDrift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-2.5vw,-2vh) scale(1.05)}}
-  @keyframes bgDrift3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(2vw,-2.5vh) scale(1.1)}}
+  @keyframes bgDrift1{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  @keyframes bgDrift2{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  @keyframes bgDrift3{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
   @media(prefers-reduced-motion:reduce){
     #bgFx .blob-inner{animation:none!important}
+    #bgFx .scene{transition:none!important}
   }
   .login-box{background:#fff;border-radius:14px;padding:40px 36px;width:360px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,0.3)}
   .login-logo{font-size:20px;font-weight:700;color:#004E2B;margin-bottom:6px}
@@ -149,10 +151,12 @@
 <body>
 
 <div id="bgFx" aria-hidden="true">
-  <div class="blob b1" data-depth="1.4"><div class="blob-inner"></div></div>
-  <div class="blob b2" data-depth="0.9"><div class="blob-inner"></div></div>
-  <div class="blob b3" data-depth="1.8"><div class="blob-inner"></div></div>
-  <div class="blob b4" data-depth="1.1"><div class="blob-inner"></div></div>
+  <div class="scene" id="bgScene">
+    <div class="blob b1"><div class="blob-inner"></div></div>
+    <div class="blob b2"><div class="blob-inner"></div></div>
+    <div class="blob b3"><div class="blob-inner"></div></div>
+    <div class="blob b4"><div class="blob-inner"></div></div>
+  </div>
 </div>
 
 <div class="login-screen" id="loginScreen">
@@ -339,24 +343,23 @@
 </div>
 
 <script>
-// ── Bewegende achtergrond: blobs volgen de muis (parallax per laag op
-// basis van data-depth), puur decoratief en altijd achter de inhoud ──
+// ── Bewegende achtergrond: het hele 3D-vlak kantelt mee met de muis
+// (rotateX/rotateY op de scene, blobs staan op verschillende translateZ-
+// diepten), puur decoratief en altijd achter de inhoud ──
 (function(){
-  const bg=document.getElementById('bgFx');
-  if(!bg||window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const blobs=Array.from(bg.querySelectorAll('.blob'));
-  let mx=0,my=0,raf=null;
+  const scene=document.getElementById('bgScene');
+  if(!scene||window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const MAX_TILT=12;
+  let rx=0,ry=0,raf=null;
   function apply(){
-    blobs.forEach(b=>{
-      const depth=parseFloat(b.dataset.depth)||1;
-      b.style.transform=`translate3d(${mx*depth}px,${my*depth}px,0)`;
-    });
+    scene.style.transform=`rotateX(${rx}deg) rotateY(${ry}deg)`;
     raf=null;
   }
   window.addEventListener('mousemove',e=>{
-    const cx=window.innerWidth/2,cy=window.innerHeight/2;
-    mx=((e.clientX-cx)/cx)*22;
-    my=((e.clientY-cy)/cy)*22;
+    const nx=(e.clientX/window.innerWidth)*2-1;
+    const ny=(e.clientY/window.innerHeight)*2-1;
+    ry=nx*MAX_TILT;
+    rx=-ny*MAX_TILT;
     if(!raf) raf=requestAnimationFrame(apply);
   },{passive:true});
 })();
