@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>parser.js tests</title>
+<script src="../parser.js"></script>
+</head>
+<body>
+<pre id="out" style="font-family:monospace;font-size:14px;white-space:pre-wrap"></pre>
+<script>
+// Tests voor parser.js, te draaien door dit bestand in een browser te openen
+// (geen Node/buildstap nodig). Elke fixture is een minimale raw-grid zoals
+// XLSX.utils.sheet_to_json(sheet,{header:1}) die zou opleveren, gebaseerd op
+// de drie SAP-formaten die we in de echte Excel zijn tegengekomen.
+
+const results = [];
+function check(label, actual, expected){
+  const pass = JSON.stringify(actual) === JSON.stringify(expected);
+  results.push({label, pass, actual, expected});
+}
+
+// ── Fixture 1: oud formaat (W19-21) — geen split, geen Reden ──────────
+{
+  const raw = [
+    ['Week', 19, '', 'Jaar', 2026],
+    [],
+    [45427],
+    ['Test taak 1', '12345', 'Jan', '', '', 'ja'],
+    ['Test taak 2', '', 'Piet', '', '', 'nee'],
+    [45428],
+    ['Test taak 3', '67890', 'Klaas', '', '', 'uc'],
+  ];
+  const r = parseExcelSheet(raw);
+  check('F1: weekNum', r.weekNum, 19);
+  check('F1: aantal rijen', r.rows.length, 3);
+  check('F1: alles gepland (geen split-kolom aanwezig)', r.rows.every(x=>x.type==='gepland'), true);
+  check('F1: dagen kloppen', r.rows.map(x=>x.day), ['Ma','Ma','Di']);
+  check('F1: statussen kloppen', r.rows.map(x=>x.status), ['ja','nee','uc']);
+  check('F1: geen reden-veld in dit formaat', r.rows.some(x=>'reden' in x), false);
+}
+
+// ── Fixture 2: split-formaat zonder Reden (W22-25) ────────────────────
+{
+  const raw = [
+    ['Week', 22, '', 'Jaar', 2026],
+    [],
+    ['Geplande werkzaamheden','','','','','','','','Ongeplande werkzaamheden'],
+    [],
+    [],
+    [45427],
+    ['Gepland taak', '111', 'Jan', '', '', 'ja', '', '', 'Ongepland taak', '222', 'Piet', '', '', 'nee'],
+    // Regressietest: een ongepland item zonder ordernummer EN zonder status
+    // (zoals OI2471 in W25) moet niet stilletjes verdwijnen.
+    ['', '', '', '', '', '', '', '', 'OI2471 noodreparatie', '', 'Max', '', '', ''],
+  ];
+  const r = parseExcelSheet(raw);
+  check('F2: weekNum', r.weekNum, 22);
+  check('F2: aantal rijen (1 gepland + 2 ongepland)', r.rows.length, 3);
+  check('F2: types kloppen', r.rows.map(x=>x.type), ['gepland','ongepland','ongepland']);
+  check('F2: ongepland zonder order/status blijft staan', r.rows[2].omschrijving, 'OI2471 noodreparatie');
+  check('F2: status valt terug op nee zonder waarde', r.rows[2].status, 'nee');
+  check('F2: geen reden-veld in dit formaat', r.rows.some(x=>'reden' in x), false);
+}
+
+// ── Fixture 3: split-formaat met Reden (W26+) ─────────────────────────
+{
+  const raw = [
+    ['Week', 26, '', 'Jaar', 2026],
+    [],
+    ['Geplande werkzaamheden','','','','','','','','','Ongeplande werkzaamheden'],
+    ['Werkzaamheden','Order','Uitvoerende','Uitvoerende','Uitvoerende','Uitgevoerd','Reden','Opmerking','',
+     'Werkzaamheden','Order','Uitvoerende','Uitvoerende','Uitvoerende','Uitgevoerd','Reden','Opmerking'],
+    [45427],
+    ['Gepland taak','111','Jan','','','nee','Productie','Opmerking tekst','',
+     'Ongepland taak','222','Piet','','','ja','','Opmerking2'],
+  ];
+  const r = parseExcelSheet(raw);
+  check('F3: weekNum', r.weekNum, 26);
+  check('F3: aantal rijen', r.rows.length, 2);
+  check('F3: ongepland-kolom correct verschoven (offset 9, niet 8)', r.rows[1].omschrijving, 'Ongepland taak');
+  check('F3: ongepland order klopt', r.rows[1].wo, '222');
+  check('F3: gepland reden opgepikt', r.rows[0].reden, 'Productie');
+  check('F3: ongepland zonder reden heeft geen reden-veld', 'reden' in r.rows[1], false);
+}
+
+// ── Fixture 4: leeg/onherkenbaar tabblad ──────────────────────────────
+{
+  const r = parseExcelSheet([['Iets anders'],['Geen weeknummer hier']]);
+  check('F4: geen weeknummer geeft null', r, null);
+}
+
+const out = document.getElementById('out');
+const failed = results.filter(r=>!r.pass);
+out.textContent = results.map(r=>
+  (r.pass?'PASS':'FAIL')+' - '+r.label+(r.pass?'':`\n       verwacht: ${JSON.stringify(r.expected)}\n       gekregen: ${JSON.stringify(r.actual)}`)
+).join('\n') + `\n\n${results.length-failed.length}/${results.length} geslaagd`;
+document.title = failed.length ? `FAIL (${failed.length})` : 'ALLE TESTS GESLAAGD';
+out.style.color = failed.length ? '#b91c1c' : '#15803d';
+</script>
+</body>
+</html>

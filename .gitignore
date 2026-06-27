@@ -1,0 +1,6 @@
+*.xlsx
+_xlsx_extract/
+*.zip
+test/_verify*
+node_modules/
+.env*
