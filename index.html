@@ -937,14 +937,14 @@ function renderDash(){
   if(!allRows.length) th+=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:#aaa">Geen werkorders voor deze filter</td></tr>`;
   allRows.forEach(r=>{
     th+=`<tr>
-      <td style="font-size:12px;color:#aaa">${r._wk}</td>
-      <td style="font-size:12px;color:#aaa">${r.day}</td>
-      <td style="font-family:monospace;font-size:11px;color:#aaa">${r.wo}</td>
+      <td style="font-size:12px;color:#c3cdc6">${r._wk}</td>
+      <td style="font-size:12px;color:#c3cdc6">${r.day}</td>
+      <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
       <td title="${r.omschrijving}">${r.omschrijving}</td>
-      <td style="font-size:12px;color:#666">${r.wie}</td>
+      <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
       <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
       <td>${sb(r.status)}</td>
-      <td style="font-size:12px;color:#888" title="${r.opmerking||''}">${r.opmerking||'—'}</td>
+      <td style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td>
     </tr>`;
   });
   document.getElementById('dTbl').innerHTML=th+'</tbody></table></div>';
@@ -1024,16 +1024,16 @@ function renderBacklog(){
       openBadge=`<span class="badge" style="background:${bg};color:${color}">${wk} week${wk>1?'en':''}</span>`;
     }
     th+=`<tr>
-      <td style="font-family:monospace;font-size:11px;color:#aaa">${r.wo}</td>
+      <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
       <td title="${r.omschrijving}">${r.omschrijving}</td>
-      <td style="font-size:12px;color:#666">${r.wie}</td>
+      <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
       <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
       <td>${sb(r.status)}</td>
-      <td style="font-size:12px;color:#666">W${r._firstWeek}</td>
-      <td style="font-size:12px;color:#666">W${r._lastWeek}</td>
+      <td style="font-size:12px;color:#9aa9a0">W${r._firstWeek}</td>
+      <td style="font-size:12px;color:#9aa9a0">W${r._lastWeek}</td>
       <td style="text-align:center">${recurBadge}</td>
       <td>${openBadge}</td>
-      <td style="font-size:12px;color:#888" title="${r.opmerking||''}">${r.opmerking||'—'}</td>
+      <td style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td>
     </tr>`;
   });
   document.getElementById('bTbl').innerHTML=th+'</tbody></table></div>';
@@ -1127,7 +1127,7 @@ function showDayTbl(wid,day,btn){
   const rows=w.rows.filter(r=>r.day===day);
   let h=`<div class="tw"><table><thead><tr><th style="width:82px">Order</th><th>Omschrijving</th><th style="width:115px">Uitvoerende(n)</th><th style="width:72px">Type</th><th style="width:82px">Uitgevoerd</th><th style="width:130px">Opmerking</th></tr></thead><tbody>`;
   if(!rows.length) h+=`<tr><td colspan="6" style="text-align:center;padding:1rem;color:#aaa">Geen werkorders op ${day}</td></tr>`;
-  rows.forEach(r=>{h+=`<tr><td style="font-family:monospace;font-size:11px;color:#aaa">${r.wo}</td><td title="${r.omschrijving}">${r.omschrijving}</td><td style="font-size:12px;color:#666">${r.wie}</td><td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td><td>${sb(r.status)}</td><td style="font-size:12px;color:#888" title="${r.opmerking||''}">${r.opmerking||'—'}</td></tr>`;});
+  rows.forEach(r=>{h+=`<tr><td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td><td title="${r.omschrijving}">${r.omschrijving}</td><td style="font-size:12px;color:#9aa9a0">${r.wie}</td><td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td><td>${sb(r.status)}</td><td style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td></tr>`;});
   document.getElementById('dtbl-'+wid).innerHTML=h+'</tbody></table></div>';
 }
 
