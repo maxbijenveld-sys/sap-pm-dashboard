@@ -72,6 +72,10 @@
   .kl{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
   .kv{font-size:24px;font-weight:600;color:#1a1a18}
   .ks{font-size:11px;color:#888;margin-top:3px}
+  .info-i{position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;background:#eef3ef;color:#8a9690;font-size:10px;font-weight:700;font-style:italic;font-family:Georgia,'Times New Roman',serif;display:flex;align-items:center;justify-content:center;cursor:help;z-index:2;user-select:none}
+  .info-i:hover{background:#004E2B;color:#fff}
+  .info-tip{position:fixed;max-width:240px;background:#1a1a18;color:#fff;font-size:12px;line-height:1.45;padding:10px 12px;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,0.3);opacity:0;pointer-events:none;transition:opacity .12s;z-index:1000}
+  .info-tip.show{opacity:1}
   .cr{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
   .cc{position:relative;background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,40,20,0.06),0 1px 2px rgba(0,40,20,0.04);overflow:hidden;transition:box-shadow .2s,transform .2s}
   .cc:hover{box-shadow:0 8px 20px rgba(0,40,20,0.14),0 2px 6px rgba(0,40,20,0.08);transform:translateY(-2px)}
@@ -215,6 +219,7 @@
     <div class="kg" id="dKpis"></div>
 <!-- Reden Analyse -->
 <div class="reden-table">
+  <span class="info-i" data-tip="Telt voor alle werkorders die niet (volledig) zijn uitgevoerd hoe vaak elke reden is opgegeven, gesorteerd van meest naar minst voorkomend.">i</span>
   <div class="reden-title"><span class="cc-icon" style="--accent:#dc2626"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>Niet uitgevoerd - meest voorkomende redenen</div>
   <div class="tw">
     <table>
@@ -234,6 +239,7 @@
 
     <div class="cr">
       <div class="cc" style="--accent:#004E2B">
+        <span class="info-i" data-tip="Toont per week het aantal geplande en ongeplande werkorders, zodat je trends in de verhouding tussen regulier en spoedonderhoud kan zien.">i</span>
         <div class="cct"><span class="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span><span class="lc-title">WO's per week — gepland vs. ongepland</span></div>
         <div class="leg">
           <span><span class="ld" style="background:#004E2B"></span>Gepland</span>
@@ -242,6 +248,7 @@
         <div style="position:relative;height:220px"><canvas id="lc"></canvas></div>
       </div>
       <div class="cc" style="--accent:#1f7a4d">
+        <span class="info-i" data-tip="Gestapelde balk per week: aantal werkorders met status Ja (groen), Nee (rood) en Deels/UC (oranje).">i</span>
         <div class="cct"><span class="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg></span><span class="bc-title">Uitvoering per week</span></div>
         <div class="leg">
           <span><span class="ld" style="background:#004E2B"></span>Ja</span>
@@ -252,6 +259,7 @@
       </div>
     </div>
     <div class="cc" style="margin-bottom:20px;--accent:#d97706">
+      <span class="info-i" data-tip="De lijn toont het uitvoeringspercentage per week (afgerond ÷ totaal van die week). De tweede lijn toont het cumulatieve aantal afgeronde werkorders, opgeteld over de weken heen.">i</span>
       <div class="cct"><span class="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span><span class="pc-title">Uitvoeringspercentage per week</span></div>
       <div style="position:relative;height:170px"><canvas id="pc"></canvas></div>
     </div>
@@ -367,6 +375,35 @@
     rx=-ny*MAX_TILT;
     if(!raf) raf=requestAnimationFrame(apply);
   },{passive:true});
+})();
+
+// ── Info-tooltips op KPI-kaarten en grafieken: één gedeeld tooltip-element
+// dat meeluistert via event delegation, zodat het ook werkt voor kaarten
+// die later dynamisch (her)getekend worden via innerHTML ──
+(function(){
+  const tip=document.createElement('div');
+  tip.className='info-tip';
+  document.body.appendChild(tip);
+  function place(el){
+    const r=el.getBoundingClientRect();
+    const tw=tip.offsetWidth,th=tip.offsetHeight;
+    let x=r.left+r.width/2-tw/2;
+    x=Math.max(8,Math.min(x,window.innerWidth-tw-8));
+    let y=r.bottom+8;
+    if(y+th>window.innerHeight-8) y=r.top-th-8;
+    tip.style.left=x+'px';
+    tip.style.top=y+'px';
+  }
+  document.addEventListener('mouseover',e=>{
+    const el=e.target.closest('.info-i');
+    if(!el) return;
+    tip.textContent=el.dataset.tip||'';
+    tip.classList.add('show');
+    place(el);
+  });
+  document.addEventListener('mouseout',e=>{
+    if(e.target.closest('.info-i')) tip.classList.remove('show');
+  });
 })();
 
 const SUPABASE_URL='https://gohmnfgpczaeoysamlwy.supabase.co';
@@ -800,9 +837,11 @@ const KC_ICONS={
   repeat:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
   clock:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>'
 };
-function kc(l,v,s,c,icon){
+function escTip(s){return(s||'').replace(/"/g,'&quot;');}
+function kc(l,v,s,c,icon,tip){
   const accent=c||'#9aa39d';
-  return`<div class="kc" style="--accent:${accent}"><div class="icon">${KC_ICONS[icon]||''}</div><div class="kl">${l}</div><div class="kv"${c?` style="color:${c}"`:''}>${v}</div><div class="ks">${s}</div></div>`;
+  const info=tip?`<span class="info-i" data-tip="${escTip(tip)}">i</span>`:'';
+  return`<div class="kc" style="--accent:${accent}">${info}<div class="icon">${KC_ICONS[icon]||''}</div><div class="kl">${l}</div><div class="kv"${c?` style="color:${c}"`:''}>${v}</div><div class="ks">${s}</div></div>`;
 }
 
 function renderDash(){
@@ -819,12 +858,18 @@ function renderDash(){
   }
   const k=kpis(kpiRows);
   document.getElementById('dKpis').innerHTML=
-    kc('Totaal WO\'s',k.t,wf==='all'?'unieke werkorders':'gefilterd',null,'totaal')+
-    kc('Afgerond',k.ja,k.pct+'% uitgevoerd','#004E2B','check')+
-    kc('Niet uitgevoerd',k.nee,'backlog risico','#dc2626','alert')+
-    kc('Deels / UC',k.d,'','#d97706','circle')+
-    kc('Gepland',k.g,Math.round(k.g/(k.t||1)*100)+'%',null,'calendar')+
-    kc('Ongepland',k.o,Math.round(k.o/(k.t||1)*100)+'%',null,'zap');
+    kc('Totaal WO\'s',k.t,wf==='all'?'unieke werkorders':'gefilterd',null,'totaal',
+      'Aantal werkorders binnen de huidige filter (week + type). Bij "Alle weken" wordt elke werkorder maar één keer geteld, op basis van ordernummer en de laatst bekende status.')+
+    kc('Afgerond',k.ja,k.pct+'% uitgevoerd','#004E2B','check',
+      'Werkorders met status "Ja" (uitgevoerd). Percentage = afgerond ÷ totaal × 100%.')+
+    kc('Niet uitgevoerd',k.nee,'backlog risico','#dc2626','alert',
+      'Werkorders met status "Nee". Blijven ze in latere weken terugkomen, dan vormen ze de backlog (zie de Backlog-pagina).')+
+    kc('Deels / UC',k.d,'','#d97706','circle',
+      'Werkorders met status "Deels" (gedeeltelijk uitgevoerd) of "Under Construction" (nog in uitvoering).')+
+    kc('Gepland',k.g,Math.round(k.g/(k.t||1)*100)+'%',null,'calendar',
+      'Werkorders die als regulier onderhoud stonden ingepland. Percentage = gepland ÷ totaal × 100%.')+
+    kc('Ongepland',k.o,Math.round(k.o/(k.t||1)*100)+'%',null,'zap',
+      'Werkorders die buiten de planning om zijn uitgevoerd, bijvoorbeeld storingen of spoedreparaties. Percentage = ongepland ÷ totaal × 100%.');
 
   const singleWeek=fWks.length===1;
   const DAYS=['Ma','Di','Wo','Do','Vr'];
@@ -937,11 +982,16 @@ function renderBacklog(){
   const longOpen=unique.filter(u=>u.status!=='ja'&&u._weeksOpenLatest>=3).length;
 
   document.getElementById('bKpis').innerHTML=
-    kc('Unieke WO\'s',total,'op basis van ordernummer',null,'totaal')+
-    kc('Nog openstaand',open,Math.round(open/(total||1)*100)+'% van totaal','#dc2626','alert')+
-    kc('Afgerond',done,Math.round(done/(total||1)*100)+'% van totaal','#004E2B','check')+
-    kc('Terugkerend',recurring,'komt in 2+ weken voor','#d97706','repeat')+
-    kc('\u2265 3 weken open',longOpen,'structurele aandacht nodig','#dc2626','clock');
+    kc('Unieke WO\'s',total,'op basis van ordernummer',null,'totaal',
+      'Totaal aantal unieke werkorders, gededupliceerd op ordernummer over alle weken heen. Werkorders zonder ordernummer worden hier niet meegeteld omdat ze niet tussen weken te koppelen zijn.')+
+    kc('Nog openstaand',open,Math.round(open/(total||1)*100)+'% van totaal','#dc2626','alert',
+      'Unieke werkorders waarvan de laatst bekende status niet "Ja" is. Percentage = nog openstaand \u00f7 totaal unieke WO\'s \u00d7 100%.')+
+    kc('Afgerond',done,Math.round(done/(total||1)*100)+'% van totaal','#004E2B','check',
+      'Unieke werkorders waarvan de laatst bekende status "Ja" is. Percentage = afgerond \u00f7 totaal unieke WO\'s \u00d7 100%.')+
+    kc('Terugkerend',recurring,'komt in 2+ weken voor','#d97706','repeat',
+      'Werkorders die in 2 of meer weken voorkomen \u2014 een signaal dat dezelfde werkzaamheid telkens opnieuw wordt ingepland in plaats van afgerond.')+
+    kc('\u2265 3 weken open',longOpen,'structurele aandacht nodig','#dc2626','clock',
+      'Nog openstaande werkorders waarbij de periode tussen eerste en laatste vermelding 3 weken of langer is \u2014 wijst op een structureel probleem in plaats van een eenmalige vertraging.');
 
   // Filter voor tabel
   let rows=unique;
@@ -1049,7 +1099,14 @@ function renderWkPg(wid){
   const days=['Ma','Di','Wo','Do','Vr'];
   let html=`<div class="whr"><div><div class="wt">Week ${w.week}</div><div class="ws">${w.label} &nbsp;·&nbsp; ${w.rows.length} werkorders</div></div>
     <button class="btn btn-del" onclick="delWeek('${w.id}')">Verwijderen</button></div>`;
-  html+=`<div class="kg">${kc('Totaal',k.t,'',null,'totaal')}${kc('Afgerond',k.ja,k.pct+'%','#004E2B','check')}${kc('Niet uitgevoerd',k.nee,'','#dc2626','alert')}${kc('Deels/UC',k.d,'','#d97706','circle')}${kc('Gepland',k.g,'',null,'calendar')}${kc('Ongepland',k.o,'',null,'zap')}</div>`;
+  html+=`<div class="kg">`+
+    kc('Totaal',k.t,'',null,'totaal','Aantal werkorders binnen deze week.')+
+    kc('Afgerond',k.ja,k.pct+'%','#004E2B','check','Werkorders met status "Ja" binnen deze week. Percentage = afgerond ÷ totaal × 100%.')+
+    kc('Niet uitgevoerd',k.nee,'','#dc2626','alert','Werkorders met status "Nee" binnen deze week.')+
+    kc('Deels/UC',k.d,'','#d97706','circle','Werkorders met status "Deels" of "Under Construction" binnen deze week.')+
+    kc('Gepland',k.g,'',null,'calendar','Werkorders die binnen deze week als regulier onderhoud stonden ingepland.')+
+    kc('Ongepland',k.o,'',null,'zap','Werkorders die binnen deze week buiten de planning om zijn uitgevoerd.')+
+    `</div>`;
   html+=`<div class="sl">Werkbelasting</div><div style="max-width:420px;margin-bottom:20px">`;
   sorted.forEach(([p,c])=>{html+=`<div class="pb"><span class="pn">${p}</span><div class="pbg"><div class="pbf" style="width:${Math.round(c/maxP*100)}%"></div></div><span class="pbc">${c}</span></div>`;});
   html+=`</div><div class="sl">Per dag</div><div class="dtr" id="dt-${wid}">`;
