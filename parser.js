@@ -55,6 +55,19 @@ function parseExcelSheet(raw){
   const redenGepland=redenCols.find(c=>!hasSplit||c<ongOffset);
   const redenOngepland=redenCols.find(c=>hasSplit&&c>=ongOffset);
 
+  // "Opmerking" (vrije tekst) staat los van Reden en wordt op dezelfde manier
+  // dynamisch opgezocht — alleen aanwezig vanaf W26, dus oudere weken krijgen
+  // gewoon geen opmerking-veld.
+  let opmerkingCols=[];
+  for(const r of raw){
+    for(let ci=0;ci<(r||[]).length;ci++){
+      if((r[ci]||'').toString().trim().toLowerCase()==='opmerking') opmerkingCols.push(ci);
+    }
+    if(opmerkingCols.length) break;
+  }
+  const opmGepland=opmerkingCols.find(c=>!hasSplit||c<ongOffset);
+  const opmOngepland=opmerkingCols.find(c=>hasSplit&&c>=ongOffset);
+
   const skipVals=new Set(['werkzaamheden','werkzaamheden (vulwerk)','jaar','week',
     'geplande werkzaamheden','ongeplande werkzaamheden','hemelvaartsdag',
     'geen td aanwezig','2e pinksterdag','']);
@@ -62,7 +75,7 @@ function parseExcelSheet(raw){
   let currentDag=null, dayIdx=-1;
   const rows=[];
 
-  const addRow=(omschr,order,w1,w2,w3,stat,reden,type)=>{
+  const addRow=(omschr,order,w1,w2,w3,stat,reden,opmerking,type)=>{
     const o=(omschr||'').toString().trim();
     if(!o||skipVals.has(o.toLowerCase())) return;
     const ol=o.toLowerCase();
@@ -72,6 +85,8 @@ function parseExcelSheet(raw){
     const row={day:currentDag,wo:((order||'').toString().trim())||'—',omschrijving:o,wie,type,status:s||'nee'};
     const redenVal=(reden||'').toString().trim();
     if(redenVal) row.reden=redenVal;
+    const opmerkingVal=(opmerking||'').toString().trim();
+    if(opmerkingVal) row.opmerking=opmerkingVal;
     rows.push(row);
   };
 
@@ -88,8 +103,8 @@ function parseExcelSheet(raw){
     if(skipVals.has(c0.toLowerCase())) continue;
     if(!currentDag) continue;
 
-    addRow(r[0],r[1],r[2],r[3],r[4],r[5],redenGepland!==undefined?r[redenGepland]:'','gepland');
-    if(hasSplit) addRow(r[ongOffset],r[ongOffset+1],r[ongOffset+2],r[ongOffset+3],r[ongOffset+4],r[ongOffset+5],redenOngepland!==undefined?r[redenOngepland]:'','ongepland');
+    addRow(r[0],r[1],r[2],r[3],r[4],r[5],redenGepland!==undefined?r[redenGepland]:'',opmGepland!==undefined?r[opmGepland]:'','gepland');
+    if(hasSplit) addRow(r[ongOffset],r[ongOffset+1],r[ongOffset+2],r[ongOffset+3],r[ongOffset+4],r[ongOffset+5],redenOngepland!==undefined?r[redenOngepland]:'',opmOngepland!==undefined?r[opmOngepland]:'','ongepland');
   }
 
   return{weekNum,yearNum,label:`Week ${weekNum}, ${yearNum}`,rows:rows.filter(r=>r.omschrijving)};

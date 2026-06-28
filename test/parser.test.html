@@ -81,6 +81,8 @@ function check(label, actual, expected){
   check('F3: ongepland order klopt', r.rows[1].wo, '222');
   check('F3: gepland reden opgepikt', r.rows[0].reden, 'Productie');
   check('F3: ongepland zonder reden heeft geen reden-veld', 'reden' in r.rows[1], false);
+  check('F3: gepland opmerking opgepikt', r.rows[0].opmerking, 'Opmerking tekst');
+  check('F3: ongepland opmerking opgepikt (los van reden)', r.rows[1].opmerking, 'Opmerking2');
 }
 
 // ── Fixture 4: leeg/onherkenbaar tabblad ──────────────────────────────
