@@ -941,7 +941,7 @@ function renderDash(){
     <th style="width:82px">Order</th><th>Omschrijving</th>
     <th style="width:115px">Uitvoerende(n)</th>
     <th style="width:72px">Type</th><th style="width:82px">Uitgevoerd</th>
-    <th style="width:130px">Opmerking</th>
+    <th style="width:240px">Opmerking</th>
   </tr></thead><tbody>`;
   if(!tableRows.length) th+=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:#aaa">Geen werkorders voor deze filter</td></tr>`;
   tableRows.forEach(r=>{
@@ -1023,7 +1023,7 @@ function renderBacklog(){
     <th style="width:70px">Laatst gezien</th>
     <th style="width:80px">Aantal weken</th>
     <th style="width:90px">Weken open</th>
-    <th style="width:120px">Opmerking</th>
+    <th style="width:200px">Opmerking</th>
   </tr></thead><tbody>`;
   if(!rows.length) th+=`<tr><td colspan="10" style="text-align:center;padding:2rem;color:#aaa">Geen werkorders voor deze filter</td></tr>`;
   rows.forEach(r=>{
@@ -1137,7 +1137,7 @@ function showDayTbl(wid,day,btn){
   if(btn){btn.closest('.dtr').querySelectorAll('.dt2').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
   const w=weeks.find(x=>x.id===wid);
   const rows=w.rows.filter(r=>r.day===day);
-  let h=`<div class="tw"><table><thead><tr><th style="width:82px">Order</th><th>Omschrijving</th><th style="width:115px">Uitvoerende(n)</th><th style="width:72px">Type</th><th style="width:82px">Uitgevoerd</th><th style="width:130px">Opmerking</th></tr></thead><tbody>`;
+  let h=`<div class="tw"><table><thead><tr><th style="width:82px">Order</th><th>Omschrijving</th><th style="width:115px">Uitvoerende(n)</th><th style="width:72px">Type</th><th style="width:82px">Uitgevoerd</th><th style="width:240px">Opmerking</th></tr></thead><tbody>`;
   if(!rows.length) h+=`<tr><td colspan="6" style="text-align:center;padding:1rem;color:#aaa">Geen werkorders op ${day}</td></tr>`;
   rows.forEach(r=>{h+=`<tr><td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td><td title="${r.omschrijving}">${r.omschrijving}</td><td style="font-size:12px;color:#9aa9a0">${r.wie}</td><td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td><td>${sb(r.status)}</td><td style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td></tr>`;});
   document.getElementById('dtbl-'+wid).innerHTML=h+'</tbody></table></div>';
