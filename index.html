@@ -171,6 +171,11 @@
   .insight-title{font-size:13px;font-weight:600;color:#eef3ee;margin-bottom:6px;display:flex;align-items:center;gap:7px}
   .insight-body{font-size:12px;color:#9aa9a0;line-height:1.55}
   .insight-body strong{color:#dce5de}
+  .analyse-reden-item{padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;border:1px solid transparent;transition:background .15s,border-color .15s}
+  .analyse-reden-item:hover{background:#263a2e;border-color:#34493c}
+  .analyse-reden-item.active{background:#1c3a28;border-color:#2f6b46}
+  .analyse-cols{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+  @media(max-width:900px){.analyse-cols{grid-template-columns:1fr}}
 
   </style>
 </head>
@@ -205,6 +210,7 @@
     <nav class="nav" id="mainNav">
       <button class="nt active" onclick="showPage('dashboard')">&#9632; Dashboard</button>
       <button class="nt" onclick="showPage('backlog')">&#9888; Backlog</button>
+      <button class="nt" id="analyseTab" onclick="showPage('analyse')">&#9670; Analyse</button>
       <span id="wkTabs"></span>
       <button class="nt add" onclick="showPage('addweek')" style="margin-left:auto">+ Week toevoegen</button>
       <button class="nt admin-only" id="gebruikerTab" onclick="showPage('gebruikers')" style="color:#00DD39;display:none">&#128100; Gebruikers</button>
@@ -238,7 +244,7 @@
 <!-- Reden Analyse -->
 <div class="reden-table">
   <span class="info-i" data-tip="Telt voor alle werkorders die niet (volledig) zijn uitgevoerd hoe vaak elke reden is opgegeven, gesorteerd van meest naar minst voorkomend.">i</span>
-  <div class="reden-title"><span class="cc-icon" style="--accent:#dc2626"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>Niet uitgevoerd - meest voorkomende redenen</div>
+  <div class="reden-title" style="justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span class="cc-icon" style="--accent:#dc2626"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>Niet uitgevoerd - meest voorkomende redenen</span><button class="btn" style="font-size:11px;padding:4px 10px" onclick="showPage('analyse')">&#9670; Analyse bekijken</button></div>
   <div class="tw">
     <table>
       <thead>
@@ -255,8 +261,6 @@
   </div>
 </div>
 
-    <div class="sl">Automatische inzichten</div>
-    <div id="dInzichten" style="margin-bottom:4px"></div>
     <div class="cr">
       <div class="cc" style="--accent:#004E2B">
         <span class="info-i" data-tip="Toont per week het aantal geplande en ongeplande werkorders, zodat je trends in de verhouding tussen regulier en spoedonderhoud kan zien.">i</span>
@@ -330,6 +334,25 @@
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn" onclick="addRow()">+ Rij toevoegen</button>
         <button class="btn btn-p" onclick="saveWeek()">&#10003; Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-analyse">
+    <div class="whr">
+      <div><div class="wt">Analyse — niet uitgevoerd</div><div class="ws">Inzichten en werkorders per reden van niet-uitvoering</div></div>
+    </div>
+    <div id="aInzichten" style="margin-bottom:20px"></div>
+    <div class="analyse-cols">
+      <div>
+        <div class="sl" style="margin-top:0">Meest voorkomende redenen</div>
+        <div id="aRedenList"></div>
+      </div>
+      <div id="aRedenDetail">
+        <div class="empty" style="padding:40px 20px">
+          <div class="empty-title">Selecteer een reden</div>
+          <div>Klik op een reden links om de bijbehorende werkorders te zien</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1098,10 +1121,12 @@ function showPage(id){
     document.querySelector('.nt').classList.add('active');
     renderDash();
     loadRedenAnalyse();
-    renderInzichten();
   } else if(id==='backlog'){
     document.querySelectorAll('.nt')[1].classList.add('active');
     renderBacklog();
+  } else if(id==='analyse'){
+    document.getElementById('analyseTab').classList.add('active');
+    renderAnalysePage();
   } else if(id==='addweek'){
     const tabs=document.querySelectorAll('.nt');
     tabs[tabs.length-1].classList.add('active');
@@ -1397,7 +1422,7 @@ async function verwijderGebruiker(userId,email){
 
 // ── Automatische inzichten ────────────────────────────────────
 function renderInzichten(){
-  const el=document.getElementById('dInzichten');
+  const el=document.getElementById('aInzichten');
   if(!el||!weeks.length){if(el)el.innerHTML='';return;}
   const insights=[];
 
@@ -1509,44 +1534,42 @@ function renderInzichten(){
 // Leest de Reden direct uit de al geladen weekplanning (vastgelegd bij Excel-
 // upload op rijen die niet "ja" als status hebben), in plaats van uit de
 // losse 'weekplanning'-tabel die hiervoor leeg bleef.
+function computeRedenData(){
+  const redenCounts={};
+  const redenRowsMap={};
+  weeks.forEach(w=>(w.rows||[]).forEach(row=>{
+    if(row.status==='ja') return;
+    const reden=row?.reden;
+    if(reden&&reden.toString().trim()){
+      const r=reden.toString().trim();
+      redenCounts[r]=(redenCounts[r]||0)+1;
+      if(!redenRowsMap[r]) redenRowsMap[r]=[];
+      redenRowsMap[r].push({...row,_wk:`W${w.week}`});
+    }
+  }));
+  window._redenRowsMap=redenRowsMap;
+  const total=Object.values(redenCounts).reduce((a,b)=>a+b,0);
+  window._redenSorted=Object.entries(redenCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  window._redenTotal=total;
+}
+
 function loadRedenAnalyse() {
   try {
-    const redenCounts = {};
-    const redenRowsMap = {};
-    weeks.forEach(w => (w.rows || []).forEach(row => {
-      if (row.status === 'ja') return;
-      const reden = row?.reden;
-      if (reden && reden.toString().trim()) {
-        const r = reden.toString().trim();
-        redenCounts[r] = (redenCounts[r] || 0) + 1;
-        if (!redenRowsMap[r]) redenRowsMap[r] = [];
-        redenRowsMap[r].push({...row, _wk: `W${w.week}`});
-      }
-    }));
-    window._redenRowsMap = redenRowsMap;
-
-    const totalNotExecuted = Object.values(redenCounts).reduce((a, b) => a + b, 0);
-    const sorted = Object.entries(redenCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
-    window._redenSorted = sorted;
-
+    computeRedenData();
+    const sorted=window._redenSorted;
+    const totalNotExecuted=window._redenTotal||0;
     const tbody = document.getElementById('redenTableBody');
     if (!tbody) return;
     if (sorted.length === 0) {
       tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888;padding:20px 10px">Geen data beschikbaar — upload een Excel met een "Reden"-kolom om de analyse te zien.</td></tr>';
       return;
     }
-
     tbody.innerHTML = sorted.map(([reden, count], i) => {
       const pct = totalNotExecuted > 0 ? ((count / totalNotExecuted) * 100).toFixed(1) : '0.0';
-      return `<tr class="reden-row" onclick="toggleRedenDetail(this,${i})" title="Klik om werkorders te bekijken">
+      return `<tr class="reden-row" onclick="goToAnalyse(${i})" title="Klik om werkorders te bekijken">
         <td>${reden}<span class="tog">&#9658;</span></td>
         <td style="text-align:right;font-weight:500">${count}</td>
         <td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:6px;background:#28392e;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#00A83C"></div></div><span style="font-size:11px;color:#9aa9a0;min-width:30px">${pct}%</span></div></td>
-      </tr>
-      <tr class="reden-detail-row" id="rd-${i}">
-        <td colspan="3"><div id="rds-${i}"></div></td>
       </tr>`;
     }).join('');
   } catch (error) {
@@ -1558,49 +1581,79 @@ function loadRedenAnalyse() {
   }
 }
 
-function toggleRedenDetail(row, idx) {
-  const detailRow = document.getElementById('rd-' + idx);
-  const subDiv = document.getElementById('rds-' + idx);
-  const isOpen = row.classList.contains('open');
-  document.querySelectorAll('.reden-row.open').forEach(r => r.classList.remove('open'));
-  document.querySelectorAll('.reden-detail-row.open').forEach(r => r.classList.remove('open'));
-  if (!isOpen) {
-    row.classList.add('open');
-    detailRow.classList.add('open');
-    if (!subDiv.dataset.built) {
-      const entry = (window._redenSorted || [])[idx];
-      const reden = entry ? entry[0] : null;
-      const rows = reden ? ((window._redenRowsMap || {})[reden] || []) : [];
-      if (!rows.length) {
-        subDiv.innerHTML = '<p style="padding:12px 16px;color:#9aa9a0;font-size:12px;margin:0">Geen werkorders gevonden</p>';
-      } else {
-        let h = `<div style="padding:10px 16px 14px">
-          <div style="font-size:11px;color:#9aa9a0;margin-bottom:8px">${rows.length} werkorder${rows.length===1?'':'s'} met deze reden</div>
-          <div class="tw" style="margin-bottom:0;overflow-x:auto"><table><thead><tr>
-            <th style="width:42px">Week</th><th style="width:34px">Dag</th>
-            <th style="width:82px">Order</th><th>Omschrijving</th>
-            <th style="width:115px">Uitvoerende(n)</th>
-            <th style="width:72px">Type</th><th style="width:82px">Uitgevoerd</th>
-            <th style="width:200px">Opmerking</th>
-          </tr></thead><tbody>`;
-        rows.forEach(r => {
-          h += `<tr>
-            <td style="font-size:12px;color:#c3cdc6">${r._wk}</td>
-            <td style="font-size:12px;color:#c3cdc6">${r.day}</td>
-            <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
-            <td title="${escTip(r.omschrijving)}">${r.omschrijving}</td>
-            <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
-            <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
-            <td>${sb(r.status)}</td>
-            <td style="font-size:12px;color:#9aa9a0" title="${escTip(r.opmerking||'')}">${r.opmerking||'—'}</td>
-          </tr>`;
-        });
-        h += '</tbody></table></div></div>';
-        subDiv.innerHTML = h;
-      }
-      subDiv.dataset.built = '1';
-    }
+function goToAnalyse(idx){
+  showPage('analyse');
+  if(idx!==undefined) showRedenDetailPanel(idx);
+}
+
+function renderAnalysePage(){
+  computeRedenData();
+  renderInzichten();
+  renderAnalyseRedenList();
+}
+
+function renderAnalyseRedenList(){
+  const el=document.getElementById('aRedenList');
+  if(!el) return;
+  const sorted=window._redenSorted||[];
+  const total=window._redenTotal||0;
+  if(!sorted.length){
+    el.innerHTML='<div style="color:#9aa9a0;font-size:13px;padding:8px 0">Geen reden-data beschikbaar.<br><span style="font-size:12px">Upload een Excel met een "Reden"-kolom.</span></div>';
+    return;
   }
+  el.innerHTML=sorted.map(([reden,count],i)=>{
+    const pct=total>0?((count/total)*100).toFixed(1):'0.0';
+    return`<div class="analyse-reden-item" id="ari-${i}" onclick="showRedenDetailPanel(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:13px;color:#eef3ee;line-height:1.3">${reden}</span>
+        <span style="font-size:12px;color:#9aa9a0;white-space:nowrap;margin-left:8px;flex-shrink:0">${count}×</span>
+      </div>
+      <div style="height:4px;background:#28392e;border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:#dc2626;border-radius:2px"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showRedenDetailPanel(idx){
+  document.querySelectorAll('.analyse-reden-item').forEach(el=>el.classList.remove('active'));
+  const item=document.getElementById('ari-'+idx);
+  if(item){item.classList.add('active');item.scrollIntoView({block:'nearest'});}
+  const entry=(window._redenSorted||[])[idx];
+  const reden=entry?entry[0]:null;
+  const count=entry?entry[1]:0;
+  const rows=reden?((window._redenRowsMap||{})[reden]||[]):[];
+  const el=document.getElementById('aRedenDetail');
+  if(!el) return;
+  if(!rows.length){
+    el.innerHTML='<div class="empty" style="padding:40px 20px"><div class="empty-title">Geen werkorders gevonden</div></div>';
+    return;
+  }
+  let h=`<div style="margin-bottom:14px">
+    <div style="font-size:15px;font-weight:600;color:#eef3ee;margin-bottom:3px">${reden}</div>
+    <div style="font-size:12px;color:#9aa9a0">${count} werkorder${count===1?'':'s'} met deze reden</div>
+  </div>
+  <div class="tw" style="margin-bottom:0"><table><thead><tr>
+    <th style="width:42px">Week</th><th style="width:34px">Dag</th>
+    <th style="width:82px">Order</th><th>Omschrijving</th>
+    <th style="width:115px">Uitvoerende(n)</th>
+    <th style="width:72px">Type</th><th style="width:82px">Uitgevoerd</th>
+    <th style="width:200px">Opmerking</th>
+  </tr></thead><tbody>`;
+  rows.forEach(r=>{
+    h+=`<tr>
+      <td style="font-size:12px;color:#c3cdc6">${r._wk}</td>
+      <td style="font-size:12px;color:#c3cdc6">${r.day}</td>
+      <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
+      <td title="${escTip(r.omschrijving)}">${r.omschrijving}</td>
+      <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
+      <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
+      <td>${sb(r.status)}</td>
+      <td style="font-size:12px;color:#9aa9a0" title="${escTip(r.opmerking||'')}">${r.opmerking||'—'}</td>
+    </tr>`;
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
 }
 
 </script>
