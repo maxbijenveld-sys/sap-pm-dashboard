@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SAP PM Weekplanning Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -138,21 +138,104 @@
   .col-hdr{font-size:11px;color:#9aa9a0;padding:0 2px}
   .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
   .grid-3-auto{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}
-  @media(max-width:900px){
+  /* ── Tablet ─────────────────────────────────────────────── */
+  @media(max-width:1023px){
     .kg{grid-template-columns:repeat(3,1fr)}
     .cr{grid-template-columns:1fr}
     .row-grid{grid-template-columns:1fr 1fr;gap:4px}
-    .topbar{flex-wrap:wrap;height:auto;padding:10px 16px;gap:8px}
-    .nav{flex-wrap:wrap}
+    .analyse-cols{grid-template-columns:1fr}
   }
-  @media(max-width:600px){
-    .main{padding:14px}
-    .kg{grid-template-columns:repeat(2,1fr)}
+  /* ── Hamburger knop ───────────────────────────────────── */
+  .ham-btn{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:44px;height:44px;background:transparent;border:none;cursor:pointer;padding:8px;border-radius:8px;flex-shrink:0}
+  .ham-btn:hover,.ham-btn:active{background:rgba(255,255,255,.12)}
+  .ham-line{display:block;width:20px;height:2px;background:#fff;border-radius:2px;transition:transform .2s,opacity .2s}
+  .ham-btn.mob-open .ham-line:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .ham-btn.mob-open .ham-line:nth-child(2){opacity:0;transform:scaleX(0)}
+  .ham-btn.mob-open .ham-line:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  /* ── Chart containers ─────────────────────────────────── */
+  .chart-container{position:relative}
+  .chart-h220{height:220px}
+  .chart-h170{height:170px}
+  /* ── Tabel: card-weergave op mobiel ───────────────────── */
+  @media(max-width:640px){
+    .tw:not(.keep-table){overflow-x:visible}
+    .tw:not(.keep-table) table{display:block}
+    .tw:not(.keep-table) thead{display:none}
+    .tw:not(.keep-table) tbody{display:block}
+    .tw:not(.keep-table) tbody tr{display:block;padding:10px 12px;border-bottom:2px solid #34493c}
+    .tw:not(.keep-table) tbody tr:last-child{border-bottom:none}
+    .tw:not(.keep-table) tbody tr:hover td{background:transparent}
+    .tw:not(.keep-table) td{display:flex;align-items:flex-start;gap:8px;padding:4px 0;border-bottom:none;white-space:normal;overflow:visible;text-overflow:clip;font-size:13px;width:100%}
+    .tw:not(.keep-table) td[data-label]::before{content:attr(data-label);min-width:90px;font-size:11px;color:#9aa9a0;font-weight:500;flex-shrink:0;padding-top:2px}
+  }
+  /* ── Mobiel (≤767px) ──────────────────────────────────── */
+  @media(max-width:767px){
+    /* Topbar: hamburger-navigatie */
+    .topbar{padding:0 8px 0 16px;height:52px;position:relative;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+    .topbar-left{flex:1;min-width:0;overflow:hidden}
+    .nav{
+      display:none;position:absolute;top:52px;left:0;right:0;
+      background:#004E2B;
+      flex-direction:column;align-items:stretch;
+      padding:10px 16px;
+      padding-bottom:max(14px,env(safe-area-inset-bottom));
+      border-top:1px solid #003D22;
+      box-shadow:0 8px 24px rgba(0,0,0,.5);
+      z-index:200;gap:2px;
+      max-height:calc(100vh - 52px);overflow-y:auto
+    }
+    .nav.mob-open{display:flex}
+    .nav .nt{font-size:15px;padding:12px 14px;text-align:left;border-radius:8px;min-height:44px;display:flex;align-items:center}
+    .nav .nt.wk{font-size:13px;padding:10px 12px;min-height:40px}
+    #wkTabs{display:flex!important;flex-wrap:wrap;gap:4px;overflow:visible!important;max-width:100%!important}
+    .nt.add{margin-left:0!important}
+    .ham-btn{display:flex}
+    .user-info{display:none}
+    .logout-btn{font-size:11px;padding:8px 8px;min-height:36px}
+    /* Hoofd-layout */
+    .main{padding:12px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+    .kg{grid-template-columns:repeat(3,1fr);gap:8px}
+    .kc{padding:11px 11px 10px}
+    .kv{font-size:20px}
+    .cr{grid-template-columns:1fr;gap:12px}
+    .fr{gap:8px;flex-wrap:wrap}
+    .fr label{font-size:12px}
+    .fr select{font-size:16px;flex:1;min-width:0}
+    .search-inp{font-size:16px;width:100%;flex:1 1 100%}
+    .whr{flex-direction:column;gap:10px;align-items:flex-start}
+    .whr>.btn{min-height:44px;padding:10px 18px;font-size:14px}
     .grid-3,.grid-3-auto{grid-template-columns:1fr}
     .row-grid{grid-template-columns:1fr}
     .col-hdr{display:none}
     .login-box{padding:28px 20px}
-    .search-inp{width:100%}
+    .reden-table{padding:12px 14px}
+    .insight-grid{grid-template-columns:1fr}
+    .analyse-cols{grid-template-columns:1fr}
+    .chart-h220{height:180px}
+    .chart-h170{height:140px}
+    .sl{margin:16px 0 8px}
+    .btn{min-height:44px}
+    .dt2{padding:9px 14px;min-height:40px}
+    input,select,textarea{font-size:16px!important}
+  }
+  /* ── Kleine phones (≤479px) ────────────────────────────── */
+  @media(max-width:479px){
+    .kg{grid-template-columns:repeat(2,1fr)}
+    .kv{font-size:18px}
+    .kl{font-size:10px}
+    .ks{font-size:10px}
+    .main{padding:10px}
+    .reden-title{font-size:12px}
+    .insight-card{padding:12px}
+    .chart-h220{height:160px}
+    .chart-h170{height:120px}
+    .topbar{padding-left:max(12px,env(safe-area-inset-left))}
+  }
+  /* ── Touch-apparaten: geen hover-effecten ─────────────── */
+  @media(hover:none){
+    .kc:hover,.cc:hover{transform:none;box-shadow:0 2px 8px rgba(0,0,0,.3),0 1px 2px rgba(0,0,0,.2)}
+    .kc:active{opacity:.85}
+    .reden-row:active td,.analyse-reden-item:active{opacity:.75}
   }
 
   .reden-table{position:relative;background:#1f2e25;border:1px solid #34493c;border-radius:14px;padding:18px 20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.3),0 1px 2px rgba(0,0,0,0.2)}
@@ -175,7 +258,6 @@
   .analyse-reden-item:hover{background:#263a2e;border-color:#34493c}
   .analyse-reden-item.active{background:#1c3a28;border-color:#2f6b46}
   .analyse-cols{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
-  @media(max-width:900px){.analyse-cols{grid-template-columns:1fr}}
 
   </style>
 </head>
@@ -208,18 +290,19 @@
   <div class="topbar-left">
     <div class="logo">SAP PM <span>Dashboard</span></div>
     <nav class="nav" id="mainNav">
-      <button class="nt active" onclick="showPage('dashboard')">&#9632; Dashboard</button>
-      <button class="nt" onclick="showPage('backlog')">&#9888; Backlog</button>
+      <button class="nt active" onclick="showPage('dashboard');closeMobileNav()">&#9632; Dashboard</button>
+      <button class="nt" onclick="showPage('backlog');closeMobileNav()">&#9888; Backlog</button>
       <span id="wkTabs"></span>
-      <button class="nt add" onclick="showPage('addweek')" style="margin-left:auto">+ Week toevoegen</button>
-      <button class="nt admin-only" id="gebruikerTab" onclick="showPage('gebruikers')" style="color:#00DD39;display:none">&#128100; Gebruikers</button>
+      <button class="nt add" onclick="showPage('addweek');closeMobileNav()" style="margin-left:auto">+ Week toevoegen</button>
+      <button class="nt admin-only" id="gebruikerTab" onclick="showPage('gebruikers');closeMobileNav()" style="color:#00DD39;display:none">&#128100; Gebruikers</button>
     </nav>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
+  <div style="display:flex;gap:6px;align-items:center">
     <span class="user-info" id="userInfo"></span>
     <input type="file" id="topUpload" accept=".xlsx,.xls" style="display:none" onchange="handleExcelUpload(this)">
-    <button class="logout-btn" onclick="wijzigWachtwoord()" style="margin-right:4px">&#128274; Wachtwoord wijzigen</button>
+    <button class="logout-btn" onclick="wijzigWachtwoord()">&#128274; Wachtwoord</button>
     <button class="logout-btn" onclick="signOut()">Uitloggen</button>
+    <button class="ham-btn" id="hamBtn" aria-label="Menu" aria-expanded="false" onclick="toggleMobileNav()"><span class="ham-line"></span><span class="ham-line"></span><span class="ham-line"></span></button>
   </div>
 </div>
 <div id="globalStatus"></div>
@@ -244,13 +327,13 @@
 <div class="reden-table">
   <span class="info-i" data-tip="Telt voor alle werkorders die niet (volledig) zijn uitgevoerd hoe vaak elke reden is opgegeven, gesorteerd van meest naar minst voorkomend.">i</span>
   <div class="reden-title" onclick="showPage('analyse')" style="cursor:pointer;justify-content:space-between" title="Klik om de volledige analyse te openen"><span style="display:flex;align-items:center;gap:8px"><span class="cc-icon" style="--accent:#dc2626"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>Niet uitgevoerd — meest voorkomende redenen</span><span style="font-size:12px;color:#9aa9a0;font-weight:400">Klik voor analyse &rsaquo;</span></div>
-  <div class="tw">
+  <div class="tw keep-table">
     <table>
       <thead>
         <tr>
           <th>Reden</th>
-          <th style="width:80px;text-align:right">Aantal</th>
-          <th style="width:150px">Percentage</th>
+          <th style="width:60px;text-align:right">Aantal</th>
+          <th style="width:120px">%</th>
         </tr>
       </thead>
       <tbody id="redenTableBody">
@@ -268,7 +351,7 @@
           <span><span class="ld" style="background:#00A83C"></span>Gepland</span>
           <span><span class="ld" style="background:#00DD39;border:1px dashed #00DD39;background:transparent"></span>Ongepland</span>
         </div>
-        <div style="position:relative;height:220px"><canvas id="lc"></canvas></div>
+        <div class="chart-container chart-h220"><canvas id="lc"></canvas></div>
       </div>
       <div class="cc" style="--accent:#1f7a4d">
         <span class="info-i" data-tip="Gestapelde balk per week: aantal werkorders met status Ja (groen), Nee (rood) en Deels/UC (oranje).">i</span>
@@ -278,13 +361,13 @@
           <span><span class="ld" style="background:#dc2626"></span>Nee</span>
           <span><span class="ld" style="background:#d97706"></span>Deels/UC</span>
         </div>
-        <div style="position:relative;height:220px"><canvas id="bc"></canvas></div>
+        <div class="chart-container chart-h220"><canvas id="bc"></canvas></div>
       </div>
     </div>
     <div class="cc" style="margin-bottom:20px;--accent:#d97706">
       <span class="info-i" data-tip="De lijn toont het uitvoeringspercentage per week (afgerond ÷ totaal van die week). De tweede lijn toont het cumulatieve aantal afgeronde werkorders, opgeteld over de weken heen.">i</span>
       <div class="cct"><span class="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span><span class="pc-title">Uitvoeringspercentage per week</span></div>
-      <div style="position:relative;height:170px"><canvas id="pc"></canvas></div>
+      <div class="chart-container chart-h170"><canvas id="pc"></canvas></div>
     </div>
     <div class="sl">Werkorders overzicht</div>
     <div id="dTbl"></div>
@@ -408,6 +491,28 @@
 </div>
 
 <script>
+// ── Mobiele navigatie ─────────────────────────────────────────────
+function toggleMobileNav(){
+  const nav=document.getElementById('mainNav');
+  const btn=document.getElementById('hamBtn');
+  const open=nav.classList.toggle('mob-open');
+  btn.classList.toggle('mob-open',open);
+  btn.setAttribute('aria-expanded',open);
+}
+function closeMobileNav(){
+  const nav=document.getElementById('mainNav');
+  const btn=document.getElementById('hamBtn');
+  if(!nav) return;
+  nav.classList.remove('mob-open');
+  btn&&btn.classList.remove('mob-open');
+  btn&&btn.setAttribute('aria-expanded','false');
+}
+// Sluit nav bij klik buiten topbar
+document.addEventListener('click',e=>{
+  const nav=document.getElementById('mainNav');
+  if(nav&&nav.classList.contains('mob-open')&&!e.target.closest('.topbar')){closeMobileNav();}
+},{passive:true});
+
 // ── Bewegende achtergrond: het hele 3D-vlak kantelt mee met de muis
 // (rotateX/rotateY op de scene, blobs staan op verschillende translateZ-
 // diepten), puur decoratief en altijd achter de inhoud ──
@@ -456,6 +561,18 @@
   document.addEventListener('mouseout',e=>{
     if(e.target.closest('.info-i')) tip.classList.remove('show');
   });
+  // Touch-ondersteuning voor tooltips op mobiel
+  document.addEventListener('touchstart',e=>{
+    const el=e.target.closest('.info-i');
+    if(!el){tip.classList.remove('show');return;}
+    e.preventDefault();
+    tip.textContent=el.dataset.tip||'';
+    tip.classList.add('show');
+    place(el);
+  },{passive:false});
+  document.addEventListener('touchend',e=>{
+    if(e.target.closest('.info-i')) setTimeout(()=>tip.classList.remove('show'),2000);
+  },{passive:true});
 })();
 
 const SUPABASE_URL='https://gohmnfgpczaeoysamlwy.supabase.co';
@@ -992,14 +1109,14 @@ function renderDash(){
   if(!tableRows.length) th+=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:#aaa">Geen werkorders voor deze filter</td></tr>`;
   tableRows.forEach(r=>{
     th+=`<tr>
-      <td style="font-size:12px;color:#c3cdc6">${r._wk}</td>
-      <td style="font-size:12px;color:#c3cdc6">${r.day}</td>
-      <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
-      <td title="${r.omschrijving}">${r.omschrijving}</td>
-      <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
-      <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
-      <td>${sb(r.status)}</td>
-      <td style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td>
+      <td data-label="Week" style="font-size:12px;color:#c3cdc6">${r._wk}</td>
+      <td data-label="Dag" style="font-size:12px;color:#c3cdc6">${r.day}</td>
+      <td data-label="Order" style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
+      <td data-label="Omschrijving" title="${r.omschrijving}">${r.omschrijving}</td>
+      <td data-label="Uitvoerende(n)" style="font-size:12px;color:#9aa9a0">${r.wie}</td>
+      <td data-label="Type">${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
+      <td data-label="Uitgevoerd">${sb(r.status)}</td>
+      <td data-label="Opmerking" style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td>
     </tr>`;
   });
   document.getElementById('dTbl').innerHTML=th+'</tbody></table></div>';
@@ -1082,16 +1199,16 @@ function renderBacklog(){
       openBadge=`<span class="badge" style="background:${bg};color:${color}">${wk} week${wk>1?'en':''}</span>`;
     }
     th+=`<tr>
-      <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
-      <td title="${r.omschrijving}">${r.omschrijving}</td>
-      <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
-      <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
-      <td>${sb(r.status)}</td>
-      <td style="font-size:12px;color:#9aa9a0">W${r._firstWeek}</td>
-      <td style="font-size:12px;color:#9aa9a0">W${r._lastWeek}</td>
-      <td style="text-align:center">${recurBadge}</td>
-      <td>${openBadge}</td>
-      <td style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td>
+      <td data-label="Order" style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
+      <td data-label="Omschrijving" title="${r.omschrijving}">${r.omschrijving}</td>
+      <td data-label="Uitvoerende(n)" style="font-size:12px;color:#9aa9a0">${r.wie}</td>
+      <td data-label="Type">${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
+      <td data-label="Status">${sb(r.status)}</td>
+      <td data-label="Eerste week" style="font-size:12px;color:#9aa9a0">W${r._firstWeek}</td>
+      <td data-label="Laatste week" style="font-size:12px;color:#9aa9a0">W${r._lastWeek}</td>
+      <td data-label="Keren" style="text-align:center">${recurBadge}</td>
+      <td data-label="Weken open">${openBadge}</td>
+      <td data-label="Opmerking" style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td>
     </tr>`;
   });
   document.getElementById('bTbl').innerHTML=th+'</tbody></table></div>';
@@ -1115,7 +1232,7 @@ function refreshTabs(){
   weeks.forEach(w=>{
     const b=document.createElement('button');
     b.className='nt wk';b.textContent=`W${w.week}`;
-    b.onclick=()=>showWkPg(w.id);
+    b.onclick=()=>{showWkPg(w.id);closeMobileNav();};
     c.appendChild(b);
   });
 }
@@ -1187,7 +1304,7 @@ function showDayTbl(wid,day,btn){
   const rows=w.rows.filter(r=>r.day===day);
   let h=`<div class="tw"><table><thead><tr><th style="width:82px">Order</th><th>Omschrijving</th><th style="width:115px">Uitvoerende(n)</th><th style="width:72px">Type</th><th style="width:82px">Uitgevoerd</th><th style="width:240px">Opmerking</th></tr></thead><tbody>`;
   if(!rows.length) h+=`<tr><td colspan="6" style="text-align:center;padding:1rem;color:#aaa">Geen werkorders op ${day}</td></tr>`;
-  rows.forEach(r=>{h+=`<tr><td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td><td title="${r.omschrijving}">${r.omschrijving}</td><td style="font-size:12px;color:#9aa9a0">${r.wie}</td><td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td><td>${sb(r.status)}</td><td style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td></tr>`;});
+  rows.forEach(r=>{h+=`<tr><td data-label="Order" style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td><td data-label="Omschrijving" title="${r.omschrijving}">${r.omschrijving}</td><td data-label="Uitvoerende(n)" style="font-size:12px;color:#9aa9a0">${r.wie}</td><td data-label="Type">${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td><td data-label="Uitgevoerd">${sb(r.status)}</td><td data-label="Opmerking" style="font-size:12px;color:#9aa9a0" title="${r.opmerking||''}">${r.opmerking||'—'}</td></tr>`;});
   document.getElementById('dtbl-'+wid).innerHTML=h+'</tbody></table></div>';
 }
 
@@ -1339,11 +1456,11 @@ async function loadGebruikers(){
       const isZelf=u.email===currentUser?.user?.email;
       const rolBadge=rol==='admin'?'<span class="badge bja">Admin</span>':'<span class="badge buc">Viewer</span>';
       html+=`<tr>
-        <td>${naam}</td>
-        <td>${u.email}</td>
-        <td>${rolBadge}</td>
-        <td style="font-size:12px;color:#888">${datum}</td>
-        <td>${isZelf?'<span style="font-size:11px;color:#aaa">(jijzelf)</span>':`<button class="btn btn-del" style="font-size:11px;padding:3px 8px" onclick="verwijderGebruiker('${u.id}','${u.email}')">Verwijderen</button>`}</td>
+        <td data-label="Naam">${naam}</td>
+        <td data-label="E-mail">${u.email}</td>
+        <td data-label="Rol">${rolBadge}</td>
+        <td data-label="Aangemaakt" style="font-size:12px;color:#888">${datum}</td>
+        <td data-label="Actie">${isZelf?'<span style="font-size:11px;color:#aaa">(jijzelf)</span>':`<button class="btn btn-del" style="font-size:11px;padding:3px 8px" onclick="verwijderGebruiker('${u.id}','${u.email}')">Verwijderen</button>`}</td>
       </tr>`;
     });
 
@@ -1618,13 +1735,13 @@ function showInstallatieDetailPanel(idx){
   </tr></thead><tbody>`;
   s.rows.forEach(r=>{
     h+=`<tr>
-      <td style="font-size:12px;color:#c3cdc6">${r._wk}</td>
-      <td style="font-size:12px;color:#c3cdc6">${r.day}</td>
-      <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
-      <td title="${escTip(r.omschrijving)}">${r.omschrijving}</td>
-      <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
-      <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
-      <td>${sb(r.status)}</td>
+      <td data-label="Week" style="font-size:12px;color:#c3cdc6">${r._wk}</td>
+      <td data-label="Dag" style="font-size:12px;color:#c3cdc6">${r.day}</td>
+      <td data-label="Order" style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
+      <td data-label="Omschrijving" title="${escTip(r.omschrijving)}">${r.omschrijving}</td>
+      <td data-label="Uitvoerende(n)" style="font-size:12px;color:#9aa9a0">${r.wie}</td>
+      <td data-label="Type">${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
+      <td data-label="Uitgevoerd">${sb(r.status)}</td>
     </tr>`;
   });
   h+='</tbody></table></div>';
@@ -1741,14 +1858,14 @@ function showRedenDetailPanel(idx){
   </tr></thead><tbody>`;
   rows.forEach(r=>{
     h+=`<tr>
-      <td style="font-size:12px;color:#c3cdc6">${r._wk}</td>
-      <td style="font-size:12px;color:#c3cdc6">${r.day}</td>
-      <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
-      <td title="${escTip(r.omschrijving)}">${r.omschrijving}</td>
-      <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
-      <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
-      <td>${sb(r.status)}</td>
-      <td style="font-size:12px;color:#9aa9a0" title="${escTip(r.opmerking||'')}">${r.opmerking||'—'}</td>
+      <td data-label="Week" style="font-size:12px;color:#c3cdc6">${r._wk}</td>
+      <td data-label="Dag" style="font-size:12px;color:#c3cdc6">${r.day}</td>
+      <td data-label="Order" style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
+      <td data-label="Omschrijving" title="${escTip(r.omschrijving)}">${r.omschrijving}</td>
+      <td data-label="Uitvoerende(n)" style="font-size:12px;color:#9aa9a0">${r.wie}</td>
+      <td data-label="Type">${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
+      <td data-label="Uitgevoerd">${sb(r.status)}</td>
+      <td data-label="Opmerking" style="font-size:12px;color:#9aa9a0" title="${escTip(r.opmerking||'')}">${r.opmerking||'—'}</td>
     </tr>`;
   });
   h+='</tbody></table></div>';
