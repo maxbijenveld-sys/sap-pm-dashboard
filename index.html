@@ -339,15 +339,23 @@
 
   <div class="pg" id="pg-analyse">
     <div class="whr">
-      <div><div class="wt">Analyse — niet uitgevoerd</div><div class="ws">Inzichten en werkorders per reden van niet-uitvoering</div></div>
+      <div><div class="wt">Analyse — niet uitgevoerd</div><div class="ws">Inzichten en werkorders per installatie en reden</div></div>
       <button class="btn" onclick="showPage('dashboard')">&#8592; Terug naar dashboard</button>
     </div>
     <div id="aInzichten" style="margin-bottom:20px"></div>
-    <div class="analyse-cols">
-      <div>
-        <div class="sl" style="margin-top:0">Meest voorkomende redenen</div>
-        <div id="aRedenList"></div>
+    <div class="sl">Top installaties — niet uitgevoerd &amp; storingen</div>
+    <div class="analyse-cols" style="margin-bottom:28px">
+      <div><div id="aInstallatieList"></div></div>
+      <div id="aInstallatieDetail">
+        <div class="empty" style="padding:40px 20px">
+          <div class="empty-title">Selecteer een installatie</div>
+          <div>Klik op een installatie links om de bijbehorende werkorders te zien</div>
+        </div>
       </div>
+    </div>
+    <div class="sl">Meest voorkomende redenen</div>
+    <div class="analyse-cols">
+      <div><div id="aRedenList"></div></div>
       <div id="aRedenDetail">
         <div class="empty" style="padding:40px 20px">
           <div class="empty-title">Selecteer een reden</div>
@@ -1533,6 +1541,96 @@ function renderInzichten(){
 // Leest de Reden direct uit de al geladen weekplanning (vastgelegd bij Excel-
 // upload op rijen die niet "ja" als status hebben), in plaats van uit de
 // losse 'weekplanning'-tabel die hiervoor leeg bleef.
+function extractInstallatieCode(omschrijving){
+  const m=(omschrijving||'').match(/^([A-Z]{2,3}\d{3,5}[A-Z]?):/);
+  return m?m[1]:null;
+}
+
+function computeInstallatieData(){
+  const map={};
+  weeks.forEach(w=>(w.rows||[]).forEach(r=>{
+    const code=extractInstallatieCode(r.omschrijving);
+    if(!code) return;
+    if(!map[code]) map[code]={code,rows:[]};
+    map[code].rows.push({...r,_wk:`W${w.week}`});
+  }));
+  const stats=Object.values(map).map(({code,rows})=>{
+    const totaal=rows.length;
+    const nee=rows.filter(r=>r.status==='nee').length;
+    const ongepland=rows.filter(r=>r.type==='ongepland').length;
+    const ja=rows.filter(r=>r.status==='ja').length;
+    const pct=totaal>0?Math.round(ja/totaal*100):0;
+    return{code,rows,totaal,nee,ongepland,ja,pct};
+  });
+  stats.sort((a,b)=>(b.nee+b.ongepland)-(a.nee+a.ongepland)||b.totaal-a.totaal);
+  window._installatieStats=stats.slice(0,10);
+}
+
+function renderAnalyseInstallatieList(){
+  const el=document.getElementById('aInstallatieList');
+  if(!el) return;
+  const stats=window._installatieStats||[];
+  if(!stats.length){
+    el.innerHTML='<div style="color:#9aa9a0;font-size:13px;padding:8px 0">Geen installatie-data beschikbaar.</div>';
+    return;
+  }
+  el.innerHTML=stats.map((s,i)=>{
+    const col=s.pct>=80?'#00A83C':s.pct>=60?'#d97706':'#dc2626';
+    return`<div class="analyse-reden-item" id="aii-${i}" onclick="showInstallatieDetailPanel(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:13px;font-weight:600;color:#eef3ee;font-family:monospace">${s.code}</span>
+        <span style="font-size:11px;color:#9aa9a0">${s.totaal} WO's</span>
+      </div>
+      <div style="display:flex;gap:12px;font-size:11px;margin-bottom:5px">
+        <span style="color:#dc2626">&#9632; ${s.nee} niet uitgevoerd</span>
+        <span style="color:#d97706">&#9889; ${s.ongepland} ongepland</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="flex:1;height:4px;background:#28392e;border-radius:2px;overflow:hidden"><div style="height:100%;width:${s.pct}%;background:${col};border-radius:2px"></div></div>
+        <span style="font-size:11px;color:${col};min-width:32px;text-align:right">${s.pct}%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showInstallatieDetailPanel(idx){
+  document.querySelectorAll('[id^="aii-"]').forEach(el=>el.classList.remove('active'));
+  const item=document.getElementById('aii-'+idx);
+  if(item){item.classList.add('active');item.scrollIntoView({block:'nearest'});}
+  const s=(window._installatieStats||[])[idx];
+  const el=document.getElementById('aInstallatieDetail');
+  if(!el||!s) return;
+  const col=s.pct>=80?'#00A83C':s.pct>=60?'#d97706':'#dc2626';
+  let h=`<div style="margin-bottom:14px">
+    <div style="font-size:15px;font-weight:600;color:#eef3ee;font-family:monospace;margin-bottom:4px">${s.code}</div>
+    <div style="display:flex;gap:16px;font-size:12px;flex-wrap:wrap">
+      <span style="color:#9aa9a0">${s.totaal} werkorders totaal</span>
+      <span style="color:#dc2626">${s.nee} niet uitgevoerd</span>
+      <span style="color:#d97706">${s.ongepland} ongepland</span>
+      <span style="color:${col};font-weight:600">${s.pct}% uitgevoerd</span>
+    </div>
+  </div>
+  <div class="tw" style="margin-bottom:0"><table><thead><tr>
+    <th style="width:42px">Week</th><th style="width:34px">Dag</th>
+    <th style="width:82px">Order</th><th>Omschrijving</th>
+    <th style="width:115px">Uitvoerende(n)</th>
+    <th style="width:72px">Type</th><th style="width:82px">Uitgevoerd</th>
+  </tr></thead><tbody>`;
+  s.rows.forEach(r=>{
+    h+=`<tr>
+      <td style="font-size:12px;color:#c3cdc6">${r._wk}</td>
+      <td style="font-size:12px;color:#c3cdc6">${r.day}</td>
+      <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
+      <td title="${escTip(r.omschrijving)}">${r.omschrijving}</td>
+      <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
+      <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
+      <td>${sb(r.status)}</td>
+    </tr>`;
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+
 function computeRedenData(){
   const redenCounts={};
   const redenRowsMap={};
@@ -1587,7 +1685,9 @@ function goToAnalyse(idx){
 
 function renderAnalysePage(){
   computeRedenData();
+  computeInstallatieData();
   renderInzichten();
+  renderAnalyseInstallatieList();
   renderAnalyseRedenList();
 }
 
