@@ -165,6 +165,12 @@
   .reden-detail-row{display:none;background:#161e1a}
   .reden-detail-row.open{display:table-row}
   .reden-detail-row>td{padding:0!important;border-bottom:2px solid #34493c!important}
+  .insight-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:20px}
+  .insight-card{position:relative;background:#1f2e25;border:1px solid #34493c;border-radius:14px;padding:16px 18px;overflow:hidden}
+  .insight-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ic-accent,#9aa39d)}
+  .insight-title{font-size:13px;font-weight:600;color:#eef3ee;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+  .insight-body{font-size:12px;color:#9aa9a0;line-height:1.55}
+  .insight-body strong{color:#dce5de}
 
   </style>
 </head>
@@ -249,6 +255,8 @@
   </div>
 </div>
 
+    <div class="sl">Automatische inzichten</div>
+    <div id="dInzichten" style="margin-bottom:4px"></div>
     <div class="cr">
       <div class="cc" style="--accent:#004E2B">
         <span class="info-i" data-tip="Toont per week het aantal geplande en ongeplande werkorders, zodat je trends in de verhouding tussen regulier en spoedonderhoud kan zien.">i</span>
@@ -1090,6 +1098,7 @@ function showPage(id){
     document.querySelector('.nt').classList.add('active');
     renderDash();
     loadRedenAnalyse();
+    renderInzichten();
   } else if(id==='backlog'){
     document.querySelectorAll('.nt')[1].classList.add('active');
     renderBacklog();
@@ -1385,6 +1394,116 @@ async function verwijderGebruiker(userId,email){
   }catch(e){alert('Fout: '+e.message);}
 }
 
+
+// ── Automatische inzichten ────────────────────────────────────
+function renderInzichten(){
+  const el=document.getElementById('dInzichten');
+  if(!el||!weeks.length){if(el)el.innerHTML='';return;}
+  const insights=[];
+
+  // 1 — Hardnekkige backlog: WO's die 3+ keer open staan
+  const byOrder={};
+  weeks.forEach(w=>w.rows.forEach(r=>{
+    if(!r.wo||r.wo==='—') return;
+    if(!byOrder[r.wo]) byOrder[r.wo]=[];
+    byOrder[r.wo].push({...r,_week:w.week});
+  }));
+  const persistent=[];
+  Object.entries(byOrder).forEach(([wo,entries])=>{
+    const openWeeks=[...new Set(entries.filter(e=>e.status!=='ja').map(e=>e._week))];
+    if(openWeeks.length>=3) persistent.push({wo,omschrijving:entries[entries.length-1].omschrijving,openWeeks});
+  });
+  if(persistent.length){
+    const list=persistent.slice(0,3).map(p=>{
+      const s=p.omschrijving.length>45?p.omschrijving.substring(0,45)+'…':p.omschrijving;
+      return`<strong>${p.wo}</strong> — ${s} <span style="color:#dc2626">(${p.openWeeks.length}&times; niet uitgevoerd)</span>`;
+    }).join('<br>');
+    const more=persistent.length>3?`<br><em style="color:#9aa9a0">en ${persistent.length-3} andere(n)&hellip;</em>`:'';
+    insights.push({c:'#dc2626',i:'&#9888;',
+      title:`${persistent.length} WO${persistent.length===1?'':'s'} staat al 3+ weken open`,
+      body:`${list}${more}<br><span style="display:block;margin-top:4px;font-size:11px">Worden steeds opnieuw ingepland zonder afronding &mdash; structurele aandacht nodig.</span>`});
+  }
+
+  // 2 — Uitvoeringstrend (laatste 3 weken)
+  if(weeks.length>=3){
+    const sorted=[...weeks].sort((a,b)=>a.week-b.week);
+    const last3=sorted.slice(-3);
+    const pcts=last3.map(w=>{const r=w.rows;return r.length>0?Math.round(r.filter(x=>x.status==='ja').length/r.length*100):0;});
+    const trend=pcts[2]-pcts[0];
+    const labels=last3.map(w=>`W${w.week}`);
+    if(Math.abs(trend)>=10){
+      const up=trend>0;
+      insights.push({c:up?'#00A83C':'#dc2626',i:up?'&#9650;':'&#9660;',
+        title:`Uitvoering ${up?'verbetert':'verslechtert'} (${up?'+':''}${trend}%)`,
+        body:`${labels[0]}: <strong>${pcts[0]}%</strong> &rarr; ${labels[1]}: <strong>${pcts[1]}%</strong> &rarr; ${labels[2]}: <strong>${pcts[2]}%</strong><br>
+          <span style="font-size:11px">${up?'Positieve ontwikkeling &mdash; uitvoeringspercentage stijgt.':'Zorgwekkende daling &mdash; check wat er in de laatste weken speelt.'}</span>`});
+    } else {
+      const avg=Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length);
+      insights.push({c:avg>=70?'#00A83C':'#d97706',i:'&rarr;',
+        title:`Stabiel uitvoeringspercentage (~${avg}%)`,
+        body:`${labels[0]}: <strong>${pcts[0]}%</strong> &rarr; ${labels[1]}: <strong>${pcts[1]}%</strong> &rarr; ${labels[2]}: <strong>${pcts[2]}%</strong>`});
+    }
+  }
+
+  // 3 — Hoog aandeel ongepland werk
+  const allRows=weeks.flatMap(w=>w.rows);
+  const totalAll=allRows.length;
+  const ong=allRows.filter(r=>r.type==='ongepland').length;
+  if(totalAll>0){
+    const pct=Math.round(ong/totalAll*100);
+    if(pct>=25){
+      insights.push({c:pct>=40?'#dc2626':'#d97706',i:'&#9889;',
+        title:`${pct}% van alle WO's is ongepland werk`,
+        body:`<strong>${ong}</strong> van de ${totalAll} werkorders is buiten de planning binnengekomen.<br>
+          <span style="font-size:11px">${pct>=40?'Hoog aandeel &mdash; storingen of spoed verdringen de reguliere planning structureel.':'Let op het groeiende aandeel ongepland werk.'}</span>`});
+    }
+  }
+
+  // 4 — Dominante reden voor niet-uitvoering
+  const rc={};let totalReden=0;
+  weeks.forEach(w=>w.rows.forEach(r=>{
+    if(r.status==='ja'||!r.reden) return;
+    const rd=r.reden.toString().trim();if(!rd) return;
+    rc[rd]=(rc[rd]||0)+1;totalReden++;
+  }));
+  if(totalReden>0){
+    const top=Object.entries(rc).sort((a,b)=>b[1]-a[1])[0];
+    const topPct=Math.round(top[1]/totalReden*100);
+    if(topPct>=30){
+      insights.push({c:topPct>=50?'#dc2626':'#d97706',i:'&#9679;',
+        title:`"${top[0]}" veroorzaakt ${topPct}% van niet-uitvoering`,
+        body:`<strong>${top[1]}</strong> van de ${totalReden} niet-uitgevoerde WO's heeft deze reden.<br>
+          <span style="font-size:11px">Wegnemen van deze oorzaak heeft de grootste impact op het uitvoeringspercentage.</span>`});
+    }
+  }
+
+  // 5 — Meest belaste medewerker
+  const pc={};
+  weeks.forEach(w=>w.rows.forEach(r=>{
+    (r.wie||'').split(',').map(x=>x.trim()).filter(x=>x&&x!=='—'&&x!=='Allen'&&x!=='H&S').forEach(p=>{pc[p]=(pc[p]||0)+1;});
+  }));
+  const persons=Object.entries(pc).sort((a,b)=>b[1]-a[1]);
+  if(persons.length>=2){
+    const avg=Object.values(pc).reduce((a,b)=>a+b,0)/persons.length;
+    const [naam,cnt]=persons[0];
+    if(cnt>avg*1.5){
+      insights.push({c:'#3b82f6',i:'&#9672;',
+        title:`${naam} heeft de hoogste werkbelasting`,
+        body:`<strong>${cnt}</strong> werkorders &mdash; ${Math.round(cnt/avg*100-100)}% meer dan gemiddeld (${Math.round(avg)} per persoon).<br>
+          <span style="font-size:11px">Overweeg herverdeling voor betere borging van de planning.</span>`});
+    }
+  }
+
+  if(!insights.length){
+    el.innerHTML=`<div style="background:#1f2e25;border:1px solid #34493c;border-radius:14px;padding:14px 18px;color:#9aa9a0;font-size:13px">Geen opvallende patronen gevonden in de huidige data.</div>`;
+    return;
+  }
+  el.innerHTML=`<div class="insight-grid">${insights.map(ins=>`
+    <div class="insight-card" style="--ic-accent:${ins.c}">
+      <div class="insight-title"><span style="color:${ins.c}">${ins.i}</span>${ins.title}</div>
+      <div class="insight-body">${ins.body}</div>
+    </div>`).join('')}</div>`;
+}
 
 // ── Reden Analyse ──────────────────────────────────────────────
 // Leest de Reden direct uit de al geladen weekplanning (vastgelegd bij Excel-
