@@ -210,7 +210,6 @@
     <nav class="nav" id="mainNav">
       <button class="nt active" onclick="showPage('dashboard')">&#9632; Dashboard</button>
       <button class="nt" onclick="showPage('backlog')">&#9888; Backlog</button>
-      <button class="nt" id="analyseTab" onclick="showPage('analyse')">&#9670; Analyse</button>
       <span id="wkTabs"></span>
       <button class="nt add" onclick="showPage('addweek')" style="margin-left:auto">+ Week toevoegen</button>
       <button class="nt admin-only" id="gebruikerTab" onclick="showPage('gebruikers')" style="color:#00DD39;display:none">&#128100; Gebruikers</button>
@@ -244,7 +243,7 @@
 <!-- Reden Analyse -->
 <div class="reden-table">
   <span class="info-i" data-tip="Telt voor alle werkorders die niet (volledig) zijn uitgevoerd hoe vaak elke reden is opgegeven, gesorteerd van meest naar minst voorkomend.">i</span>
-  <div class="reden-title" style="justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span class="cc-icon" style="--accent:#dc2626"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>Niet uitgevoerd - meest voorkomende redenen</span><button class="btn" style="font-size:11px;padding:4px 10px" onclick="showPage('analyse')">&#9670; Analyse bekijken</button></div>
+  <div class="reden-title" onclick="showPage('analyse')" style="cursor:pointer;justify-content:space-between" title="Klik om de volledige analyse te openen"><span style="display:flex;align-items:center;gap:8px"><span class="cc-icon" style="--accent:#dc2626"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>Niet uitgevoerd — meest voorkomende redenen</span><span style="font-size:12px;color:#9aa9a0;font-weight:400">Klik voor analyse &rsaquo;</span></div>
   <div class="tw">
     <table>
       <thead>
@@ -1125,7 +1124,6 @@ function showPage(id){
     document.querySelectorAll('.nt')[1].classList.add('active');
     renderBacklog();
   } else if(id==='analyse'){
-    document.getElementById('analyseTab').classList.add('active');
     renderAnalysePage();
   } else if(id==='addweek'){
     const tabs=document.querySelectorAll('.nt');
