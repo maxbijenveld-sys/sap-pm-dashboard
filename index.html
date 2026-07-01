@@ -171,9 +171,7 @@
   .insight-title{font-size:13px;font-weight:600;color:#eef3ee;margin-bottom:6px;display:flex;align-items:center;gap:7px}
   .insight-body{font-size:12px;color:#9aa9a0;line-height:1.55}
   .insight-body strong{color:#dce5de}
-  .kc[data-kpi]{cursor:pointer}
-  .kc.kc-active{box-shadow:0 0 0 2px var(--accent,#9aa39d),0 10px 24px rgba(0,0,0,0.45)!important;transform:translateY(-2px)}
-  .analyse-reden-item{padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;border:1px solid transparent;transition:background .15s,border-color .15s}
+.analyse-reden-item{padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;border:1px solid transparent;transition:background .15s,border-color .15s}
   .analyse-reden-item:hover{background:#263a2e;border-color:#34493c}
   .analyse-reden-item.active{background:#1c3a28;border-color:#2f6b46}
   .analyse-cols{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
@@ -239,7 +237,7 @@
         <option value="gepland">Alleen gepland</option>
         <option value="ongepland">Alleen ongepland</option>
       </select>
-      <input type="text" id="fSearch" class="search-inp" placeholder="Zoek op ordernummer of omschrijving..." oninput="renderDashTable()">
+      <input type="text" id="fSearch" class="search-inp" placeholder="Zoek op ordernummer of omschrijving..." oninput="renderDash()">
     </div>
     <div class="kg" id="dKpis"></div>
 <!-- Reden Analyse -->
@@ -288,7 +286,7 @@
       <div class="cct"><span class="cc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span><span class="pc-title">Uitvoeringspercentage per week</span></div>
       <div style="position:relative;height:170px"><canvas id="pc"></canvas></div>
     </div>
-    <div class="sl">Werkorders overzicht<span id="kpiFilterLabel" style="font-weight:400;color:#9aa9a0;font-size:11px"></span></div>
+    <div class="sl">Werkorders overzicht</div>
     <div id="dTbl"></div>
   </div>
 
@@ -468,7 +466,6 @@ let lcI=null,bcI=null,pcI=null;
 let weeks=[];
 let currentUser=null;
 let isAdmin=false;
-let kpiFilter=null;
 
 // ── Supabase API helpers ──────────────────────────────────────
 async function sbFetch(path,opts={}){
@@ -893,11 +890,10 @@ const KC_ICONS={
   clock:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>'
 };
 function escTip(s){return(s||'').replace(/"/g,'&quot;');}
-function kc(l,v,s,c,icon,tip,filter){
+function kc(l,v,s,c,icon,tip){
   const accent=c||'#9aa39d';
   const info=tip?`<span class="info-i" data-tip="${escTip(tip)}">i</span>`:'';
-  const fa=filter!==undefined?` data-kpi="${filter}" onclick="setKpiFilter('${filter}')" tabindex="0"`:'';
-  return`<div class="kc"${fa} style="--accent:${accent}">${info}<div class="icon">${KC_ICONS[icon]||''}</div><div class="kl">${l}</div><div class="kv"${c?` style="color:${c}"`:''}>${v}</div><div class="ks">${s}</div></div>`;
+  return`<div class="kc" style="--accent:${accent}">${info}<div class="icon">${KC_ICONS[icon]||''}</div><div class="kl">${l}</div><div class="kv"${c?` style="color:${c}"`:''}>${v}</div><div class="ks">${s}</div></div>`;
 }
 
 function renderDash(){
@@ -915,17 +911,17 @@ function renderDash(){
   const k=kpis(kpiRows);
   document.getElementById('dKpis').innerHTML=
     kc('Totaal WO\'s',k.t,wf==='all'?'unieke werkorders':'gefilterd',null,'totaal',
-      'Aantal werkorders binnen de huidige filter (week + type). Bij "Alle weken" wordt elke werkorder maar één keer geteld, op basis van ordernummer en de laatst bekende status.','all')+
+      'Aantal werkorders binnen de huidige filter (week + type). Bij "Alle weken" wordt elke werkorder maar één keer geteld, op basis van ordernummer en de laatst bekende status.')+
     kc('Afgerond',k.ja,k.pct+'% uitgevoerd','#004E2B','check',
-      'Werkorders met status "Ja" (uitgevoerd). Klik om te filteren.','ja')+
+      'Werkorders met status "Ja" (uitgevoerd). Percentage = afgerond ÷ totaal × 100%.')+
     kc('Niet uitgevoerd',k.nee,'backlog risico','#dc2626','alert',
-      'Werkorders met status "Nee". Klik om te filteren.','nee')+
+      'Werkorders met status "Nee". Blijven ze in latere weken terugkomen, dan vormen ze de backlog (zie de Backlog-pagina).')+
     kc('Deels / UC',k.d,'','#d97706','circle',
-      'Werkorders met status "Deels" of "Under Construction". Klik om te filteren.','deels')+
+      'Werkorders met status "Deels" (gedeeltelijk uitgevoerd) of "Under Construction" (nog in uitvoering).')+
     kc('Gepland',k.g,Math.round(k.g/(k.t||1)*100)+'%',null,'calendar',
-      'Geplande werkorders. Klik om te filteren.','gepland')+
+      'Werkorders die als regulier onderhoud stonden ingepland. Percentage = gepland ÷ totaal × 100%.')+
     kc('Ongepland',k.o,Math.round(k.o/(k.t||1)*100)+'%',null,'zap',
-      'Ongeplande werkorders (storingen/spoed). Klik om te filteren.','ongepland');
+      'Werkorders die buiten de planning om zijn uitgevoerd, bijvoorbeeld storingen of spoedreparaties. Percentage = ongepland ÷ totaal × 100%.');
 
   const singleWeek=fWks.length===1;
   const DAYS=['Ma','Di','Wo','Do','Vr'];
@@ -983,37 +979,8 @@ function renderDash(){
     y1:{position:'right',grid:{display:false},ticks:{color:tickColor,font:{size:12}},beginAtZero:true,title:{display:true,text:'Cumulatief afgerond',font:{size:11},color:tickColor}}
   }}});
 
-  renderDashTable();
-}
-
-function setKpiFilter(f){
-  kpiFilter=kpiFilter===f||f==='all'?null:f;
-  renderDashTable();
-}
-
-function renderDashTable(){
-  const wf=document.getElementById('fWeek').value;
-  const tf=document.getElementById('fType').value;
-  const fWks=wf==='all'?weeks:weeks.filter(w=>w.id===wf);
-  let allRows=[];
-  fWks.forEach(w=>filtered(w,tf).forEach(r=>allRows.push({...r,_wk:`W${w.week}`})));
-
-  let tableRows=allRows;
-  if(kpiFilter==='ja') tableRows=tableRows.filter(r=>r.status==='ja');
-  else if(kpiFilter==='nee') tableRows=tableRows.filter(r=>r.status==='nee');
-  else if(kpiFilter==='deels') tableRows=tableRows.filter(r=>r.status==='deels'||r.status==='uc');
-  else if(kpiFilter==='gepland') tableRows=tableRows.filter(r=>r.type==='gepland');
-  else if(kpiFilter==='ongepland') tableRows=tableRows.filter(r=>r.type==='ongepland');
-
   const dSearch=(document.getElementById('fSearch').value||'').trim().toLowerCase();
-  if(dSearch) tableRows=tableRows.filter(r=>(r.wo||'').toLowerCase().includes(dSearch)||(r.omschrijving||'').toLowerCase().includes(dSearch));
-
-  document.querySelectorAll('#dKpis .kc[data-kpi]').forEach(el=>{
-    el.classList.toggle('kc-active',el.dataset.kpi===(kpiFilter||''));
-  });
-  const labelMap={ja:'Afgerond',nee:'Niet uitgevoerd',deels:'Deels / UC',gepland:'Gepland',ongepland:'Ongepland'};
-  const lbl=document.getElementById('kpiFilterLabel');
-  if(lbl) lbl.textContent=kpiFilter?` — gefilterd op: ${labelMap[kpiFilter]} (klik kaart nogmaals om te wissen)`:'';
+  const tableRows=dSearch?allRows.filter(r=>(r.wo||'').toLowerCase().includes(dSearch)||(r.omschrijving||'').toLowerCase().includes(dSearch)):allRows;
 
   let th=`<div class="tw"><table><thead><tr>
     <th style="width:42px">Week</th><th style="width:34px">Dag</th>
