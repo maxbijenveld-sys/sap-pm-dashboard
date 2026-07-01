@@ -158,6 +158,13 @@
   .reden-table{position:relative;background:#1f2e25;border:1px solid #34493c;border-radius:14px;padding:18px 20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.3),0 1px 2px rgba(0,0,0,0.2)}
   .reden-table::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:#dc2626}
   .reden-title{font-size:13px;color:#eef3ee;margin-bottom:12px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .reden-row{cursor:pointer}
+  .reden-row:hover td{background:#263a2e}
+  .tog{display:inline-block;transition:transform .2s;margin-left:6px;color:#9aa9a0;font-size:10px;vertical-align:middle}
+  .reden-row.open .tog{transform:rotate(90deg);color:#00A83C}
+  .reden-detail-row{display:none;background:#161e1a}
+  .reden-detail-row.open{display:table-row}
+  .reden-detail-row>td{padding:0!important;border-bottom:2px solid #34493c!important}
 
   </style>
 </head>
@@ -1386,33 +1393,41 @@ async function verwijderGebruiker(userId,email){
 function loadRedenAnalyse() {
   try {
     const redenCounts = {};
+    const redenRowsMap = {};
     weeks.forEach(w => (w.rows || []).forEach(row => {
       if (row.status === 'ja') return;
       const reden = row?.reden;
       if (reden && reden.toString().trim()) {
         const r = reden.toString().trim();
         redenCounts[r] = (redenCounts[r] || 0) + 1;
+        if (!redenRowsMap[r]) redenRowsMap[r] = [];
+        redenRowsMap[r].push({...row, _wk: `W${w.week}`});
       }
     }));
+    window._redenRowsMap = redenRowsMap;
 
     const totalNotExecuted = Object.values(redenCounts).reduce((a, b) => a + b, 0);
     const sorted = Object.entries(redenCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
+    window._redenSorted = sorted;
 
     const tbody = document.getElementById('redenTableBody');
     if (!tbody) return;
     if (sorted.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888;padding:20px 10px">Geen data beschikbaar</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888;padding:20px 10px">Geen data beschikbaar — upload een Excel met een "Reden"-kolom om de analyse te zien.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = sorted.map(([reden, count]) => {
+    tbody.innerHTML = sorted.map(([reden, count], i) => {
       const pct = totalNotExecuted > 0 ? ((count / totalNotExecuted) * 100).toFixed(1) : '0.0';
-      return `<tr>
-        <td>${reden}</td>
+      return `<tr class="reden-row" onclick="toggleRedenDetail(this,${i})" title="Klik om werkorders te bekijken">
+        <td>${reden}<span class="tog">&#9658;</span></td>
         <td style="text-align:right;font-weight:500">${count}</td>
         <td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:6px;background:#28392e;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#00A83C"></div></div><span style="font-size:11px;color:#9aa9a0;min-width:30px">${pct}%</span></div></td>
+      </tr>
+      <tr class="reden-detail-row" id="rd-${i}">
+        <td colspan="3"><div id="rds-${i}"></div></td>
       </tr>`;
     }).join('');
   } catch (error) {
@@ -1420,6 +1435,51 @@ function loadRedenAnalyse() {
     const tbody = document.getElementById('redenTableBody');
     if (tbody) {
       tbody.innerHTML = '<tr><td colspan="3" style="color:#dc2626;padding:10px">Fout: ' + (error.message || 'Onbekende fout') + '</td></tr>';
+    }
+  }
+}
+
+function toggleRedenDetail(row, idx) {
+  const detailRow = document.getElementById('rd-' + idx);
+  const subDiv = document.getElementById('rds-' + idx);
+  const isOpen = row.classList.contains('open');
+  document.querySelectorAll('.reden-row.open').forEach(r => r.classList.remove('open'));
+  document.querySelectorAll('.reden-detail-row.open').forEach(r => r.classList.remove('open'));
+  if (!isOpen) {
+    row.classList.add('open');
+    detailRow.classList.add('open');
+    if (!subDiv.dataset.built) {
+      const entry = (window._redenSorted || [])[idx];
+      const reden = entry ? entry[0] : null;
+      const rows = reden ? ((window._redenRowsMap || {})[reden] || []) : [];
+      if (!rows.length) {
+        subDiv.innerHTML = '<p style="padding:12px 16px;color:#9aa9a0;font-size:12px;margin:0">Geen werkorders gevonden</p>';
+      } else {
+        let h = `<div style="padding:10px 16px 14px">
+          <div style="font-size:11px;color:#9aa9a0;margin-bottom:8px">${rows.length} werkorder${rows.length===1?'':'s'} met deze reden</div>
+          <div class="tw" style="margin-bottom:0;overflow-x:auto"><table><thead><tr>
+            <th style="width:42px">Week</th><th style="width:34px">Dag</th>
+            <th style="width:82px">Order</th><th>Omschrijving</th>
+            <th style="width:115px">Uitvoerende(n)</th>
+            <th style="width:72px">Type</th><th style="width:82px">Uitgevoerd</th>
+            <th style="width:200px">Opmerking</th>
+          </tr></thead><tbody>`;
+        rows.forEach(r => {
+          h += `<tr>
+            <td style="font-size:12px;color:#c3cdc6">${r._wk}</td>
+            <td style="font-size:12px;color:#c3cdc6">${r.day}</td>
+            <td style="font-family:monospace;font-size:11px;color:#c3cdc6">${r.wo}</td>
+            <td title="${escTip(r.omschrijving)}">${r.omschrijving}</td>
+            <td style="font-size:12px;color:#9aa9a0">${r.wie}</td>
+            <td>${r.type==='gepland'?'<span class="badge bg2">Gepland</span>':'<span class="badge bo2">Ongepland</span>'}</td>
+            <td>${sb(r.status)}</td>
+            <td style="font-size:12px;color:#9aa9a0" title="${escTip(r.opmerking||'')}">${r.opmerking||'—'}</td>
+          </tr>`;
+        });
+        h += '</tbody></table></div></div>';
+        subDiv.innerHTML = h;
+      }
+      subDiv.dataset.built = '1';
     }
   }
 }
